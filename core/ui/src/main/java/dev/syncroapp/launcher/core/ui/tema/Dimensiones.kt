@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.syncroapp.launcher.core.data.modelo.Densidad
 import dev.syncroapp.launcher.core.data.modelo.GrosorTrazo
+import dev.syncroapp.launcher.core.data.modelo.TamanoDia
 
 /** Escala de espaciado. Unidad base 4 dp. */
 object Espacio {
@@ -46,6 +47,25 @@ fun anchoTrazoDe(grosor: GrosorTrazo): Dp = when (grosor) {
     GrosorTrazo.FINO -> 2.dp
     GrosorTrazo.MEDIO -> 3.dp
     GrosorTrazo.GRUESO -> 4.5.dp
+}
+
+/**
+ * Rango de tamano del dia de la semana, en sp.
+ *
+ * El texto se auto-escala hasta llenar el ancho disponible sin pasarse del maximo, asi que
+ * estos limites son lo que separa "un detalle discreto" de "el dia ocupa media pantalla".
+ */
+fun rangoTamanoDia(tamano: TamanoDia): ClosedFloatingPointRange<Float> = when (tamano) {
+    TamanoDia.PEQUENO -> 40f..64f
+    TamanoDia.MEDIANO -> 64f..104f
+    TamanoDia.GRANDE -> 96f..172f
+}
+
+/** El trazo se afina cuando la letra es chica: un contorno de 4.5 dp en 40 sp la rellena. */
+fun anchoTrazoDe(grosor: GrosorTrazo, tamano: TamanoDia): Dp = when (tamano) {
+    TamanoDia.PEQUENO -> anchoTrazoDe(grosor) * 0.55f
+    TamanoDia.MEDIANO -> anchoTrazoDe(grosor) * 0.8f
+    TamanoDia.GRANDE -> anchoTrazoDe(grosor)
 }
 
 /** Alto minimo de un objetivo tactil segun las guias de accesibilidad. */

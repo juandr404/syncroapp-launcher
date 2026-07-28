@@ -34,7 +34,14 @@ data class EstadoInicio(
     val favoritos: List<FavoritoResuelto> = emptyList(),
     val ajustes: AjustesLauncher = AjustesLauncher(),
     val esPredeterminado: Boolean = true,
-    val cargando: Boolean = true,
+    /**
+     * No hay ningun favorito guardado en la configuracion.
+     *
+     * Es distinto de `favoritos.isEmpty()`: esa lista tambien esta vacia mientras la lista de
+     * aplicaciones del sistema todavia se esta leyendo. Esta bandera se sabe de inmediato, y
+     * por eso es la que decide si mostrar las instrucciones iniciales sin hacer esperar a nadie.
+     */
+    val sinFavoritosGuardados: Boolean = false,
 )
 
 @HiltViewModel
@@ -58,14 +65,13 @@ class InicioViewModel @Inject constructor(
         fuenteApps.apps,
         repositorio.ajustes,
         esPredeterminado,
-        fuenteApps.cargaInicialCompletada,
-    ) { instante, apps, ajustes, predeterminado, cargaCompletada ->
+    ) { instante, apps, ajustes, predeterminado ->
         EstadoInicio(
             instante = instante,
             favoritos = resolverFavoritos(ajustes, apps),
             ajustes = ajustes,
             esPredeterminado = predeterminado,
-            cargando = !cargaCompletada,
+            sinFavoritosGuardados = ajustes.favoritos.isEmpty(),
         )
     }.stateIn(
         scope = viewModelScope,

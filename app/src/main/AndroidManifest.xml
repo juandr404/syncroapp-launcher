@@ -12,6 +12,18 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!--
+            Sin estas dos entradas, tocar la hora o la fecha no abre nada mientras la app
+            todavia no es el launcher predeterminado: el filtrado de visibilidad de Android 11+
+            impide resolver estos intents y startActivity falla en silencio.
+        -->
+        <intent>
+            <action android:name="android.intent.action.SHOW_ALARMS" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_CALENDAR" />
+        </intent>
     </queries>
 
     <!--

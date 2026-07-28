@@ -9,6 +9,7 @@ import dev.syncroapp.launcher.core.data.modelo.AjustesLauncher
 import dev.syncroapp.launcher.core.data.modelo.Alineacion
 import dev.syncroapp.launcher.core.data.modelo.Densidad
 import dev.syncroapp.launcher.core.data.modelo.GrosorTrazo
+import dev.syncroapp.launcher.core.data.modelo.TamanoDia
 import dev.syncroapp.launcher.core.data.modelo.Tema
 import dev.syncroapp.launcher.core.launcherapps.AplicacionInstalada
 import dev.syncroapp.launcher.core.launcherapps.FuenteApps
@@ -64,6 +65,7 @@ class AjustesViewModel @Inject constructor(
     fun cambiarMostrarDiaGigante(valor: Boolean) = actualizar { it.copy(mostrarDiaGigante = valor) }
     fun cambiarMostrarFecha(valor: Boolean) = actualizar { it.copy(mostrarFecha = valor) }
     fun cambiarGrosorTrazo(valor: GrosorTrazo) = actualizar { it.copy(grosorTrazo = valor) }
+    fun cambiarTamanoDia(valor: TamanoDia) = actualizar { it.copy(tamanoDia = valor) }
     fun cambiarDiaEnIngles(valor: Boolean) = actualizar { it.copy(diaEnIngles = valor) }
 
     // --- Busqueda ---

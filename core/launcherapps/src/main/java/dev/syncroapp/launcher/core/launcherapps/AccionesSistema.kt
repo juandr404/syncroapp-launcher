@@ -5,6 +5,7 @@ import android.content.Intent
 import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.util.Log
+import android.widget.Toast
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,23 +41,38 @@ class AccionesSistema @Inject constructor(
     }
 
     /** Abre la app de reloj/alarmas del sistema (toque sobre la hora). */
-    fun abrirReloj(): Boolean = abrir(
-        Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    fun abrirReloj(): Boolean = abrirElPrimeroQueFuncione(
+        "el reloj",
+        Intent(AlarmClock.ACTION_SHOW_ALARMS),
     )
 
     /** Abre el calendario en el dia de hoy (toque sobre la fecha). */
-    fun abrirCalendario(): Boolean = abrir(
+    fun abrirCalendario(): Boolean = abrirElPrimeroQueFuncione(
+        "el calendario",
         Intent(Intent.ACTION_VIEW)
-            .setData(CalendarContract.CONTENT_URI.buildUpon().appendPath("time").build())
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            .setData(CalendarContract.CONTENT_URI.buildUpon().appendPath("time").build()),
+        Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR),
     )
 
-    private fun abrir(intent: Intent): Boolean = runCatching {
-        contexto.startActivity(intent)
-        true
-    }.getOrElse {
-        Log.d(TAG, "No hay app que atienda ${intent.action}", it)
-        false
+    /**
+     * Prueba los intents en orden y se queda con el primero que alguna app atienda.
+     *
+     * Si ninguno funciona se lo dice al usuario en vez de no hacer nada: un toque que no
+     * produce ninguna reaccion se siente como una app rota.
+     */
+    private fun abrirElPrimeroQueFuncione(queCosa: String, vararg intents: Intent): Boolean {
+        for (intent in intents) {
+            val exito = runCatching {
+                contexto.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                true
+            }.getOrElse {
+                Log.d(TAG, "Nadie atiende ${intent.action}", it)
+                false
+            }
+            if (exito) return true
+        }
+        Toast.makeText(contexto, "No se encontro una app para $queCosa.", Toast.LENGTH_SHORT).show()
+        return false
     }
 
     private companion object {

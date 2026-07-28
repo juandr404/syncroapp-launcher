@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.syncroapp.launcher.comun.MenuContextualApp
 import dev.syncroapp.launcher.comun.OpcionMenu
 import dev.syncroapp.launcher.core.launcherapps.AplicacionInstalada
+import dev.syncroapp.launcher.core.ui.componentes.EncabezadoPantalla
 import dev.syncroapp.launcher.core.ui.componentes.FilaApp
 import dev.syncroapp.launcher.core.ui.tema.Espacio
 import dev.syncroapp.launcher.core.ui.tema.TemaLauncher
@@ -82,6 +83,15 @@ fun PantallaCajon(
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .imePadding(),
     ) {
+        EncabezadoPantalla(
+            titulo = "Aplicaciones",
+            onVolver = {
+                viewModel.limpiarBusqueda()
+                onCerrar()
+            },
+            modifier = Modifier.padding(top = Espacio.s),
+        )
+
         CampoBusqueda(
             texto = texto,
             onTextoCambia = viewModel::escribir,

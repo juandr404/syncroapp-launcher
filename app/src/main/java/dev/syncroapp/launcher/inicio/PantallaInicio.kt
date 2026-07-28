@@ -1,30 +1,21 @@
 package dev.syncroapp.launcher.inicio
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -42,7 +33,9 @@ import dev.syncroapp.launcher.core.ui.tema.dimensionesDe
 /**
  * Pantalla de inicio: reloj + favoritos, y nada mas.
  *
- * El espacio vacio debajo de la lista no se rellena: es parte del diseno.
+ * Ojo al tocar esta pantalla: NO debe llevar scroll. Un contenedor con scroll consume el
+ * arrastre vertical antes de que llegue al detector de gestos del fondo, y eso deja el
+ * deslizar-hacia-arriba (la unica forma de llegar al cajon) sin funcionar.
  */
 @Composable
 fun PantallaInicio(
@@ -51,9 +44,6 @@ fun PantallaInicio(
     viewModel: InicioViewModel = hiltViewModel(),
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
-    val colores = TemaLauncher.colores
-    val tipografia = TemaLauncher.tipografia
-    val contexto = LocalContext.current
     val dimensiones = dimensionesDe(estado.ajustes.densidad)
 
     // El usuario pudo cambiar el launcher predeterminado desde fuera; al volver, revisamos.
@@ -61,10 +51,6 @@ fun PantallaInicio(
         viewModel.revisarSiEsPredeterminado()
         onPauseOrDispose { }
     }
-
-    val selectorLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) { viewModel.revisarSiEsPredeterminado() }
 
     var appDelMenu by remember { mutableStateOf<FavoritoResuelto?>(null) }
     var appARenombrar by remember { mutableStateOf<FavoritoResuelto?>(null) }
@@ -84,8 +70,7 @@ fun PantallaInicio(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-                .verticalScroll(rememberScrollState()),
+                .windowInsetsPadding(WindowInsets.safeDrawing),
         ) {
             Spacer(modifier = Modifier.height(margenSuperior))
 
@@ -93,6 +78,7 @@ fun PantallaInicio(
                 instante = estado.instante,
                 formato24h = estado.ajustes.formato24h,
                 mostrarDiaGigante = estado.ajustes.mostrarDiaGigante,
+                tamanoDia = estado.ajustes.tamanoDia,
                 mostrarFecha = estado.ajustes.mostrarFecha,
                 grosorTrazo = estado.ajustes.grosorTrazo,
                 alineacion = estado.ajustes.alineacion,
@@ -104,8 +90,8 @@ fun PantallaInicio(
 
             Spacer(modifier = Modifier.height(Espacio.relojALista))
 
-            if (estado.favoritos.isEmpty() && !estado.cargando) {
-                PistaSinFavoritos()
+            if (estado.sinFavoritosGuardados) {
+                PistaSinFavoritos(esPredeterminado = estado.esPredeterminado)
             }
 
             estado.favoritos.forEach { favorito ->
@@ -119,19 +105,6 @@ fun PantallaInicio(
                     onLongClick = { appDelMenu = favorito },
                 )
             }
-
-            Spacer(modifier = Modifier.height(Espacio.xxl))
-        }
-
-        if (!estado.esPredeterminado) {
-            AvisoNoPredeterminado(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(Espacio.margen),
-                onEstablecer = { selectorLauncher.launch(viewModel.intentParaElegirLauncher()) },
-                onAbrirAjustesDeInicio = { contexto.startActivity(viewModel.intentAjustesDeInicio()) },
-            )
         }
     }
 
@@ -157,9 +130,12 @@ fun PantallaInicio(
     }
 }
 
-/** Estado vacio: dice como llegar a las apps sin sermonear ni ilustrar nada. */
+/**
+ * Estado vacio: explica los dos gestos que hacen falta para empezar.
+ * Sin ilustraciones y sin sermones; son dos lineas y desaparecen al agregar el primer favorito.
+ */
 @Composable
-private fun PistaSinFavoritos() {
+private fun PistaSinFavoritos(esPredeterminado: Boolean) {
     val colores = TemaLauncher.colores
     val tipografia = TemaLauncher.tipografia
 
@@ -173,41 +149,11 @@ private fun PistaSinFavoritos() {
             style = tipografia.pista.copy(color = colores.textoTerciario),
             modifier = Modifier.padding(top = Espacio.s),
         )
-    }
-}
-
-/**
- * Aviso de que el launcher no es el predeterminado.
- *
- * Ofrece siempre las dos vias: el dialogo del sistema y la pantalla de ajustes de inicio,
- * porque en algunas capas (MIUI entre ellas) el dialogo puede no aparecer.
- */
-@Composable
-private fun AvisoNoPredeterminado(
-    onEstablecer: () -> Unit,
-    onAbrirAjustesDeInicio: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val colores = TemaLauncher.colores
-    val tipografia = TemaLauncher.tipografia
-
-    Box(modifier = modifier.fillMaxWidth()) {
-        Column {
+        if (!esPredeterminado) {
             Text(
-                text = "Establecer como pantalla de inicio",
-                style = tipografia.cuerpo.copy(color = colores.textoPrimario),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onEstablecer)
-                    .padding(vertical = 12.dp),
-            )
-            Text(
-                text = "Si no aparece el dialogo, abra los ajustes de inicio del sistema.",
+                text = "En Ajustes puede establecerlo como su pantalla de inicio.",
                 style = tipografia.pista.copy(color = colores.textoTerciario),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onAbrirAjustesDeInicio)
-                    .padding(bottom = 12.dp),
+                modifier = Modifier.padding(top = Espacio.s),
             )
         }
     }

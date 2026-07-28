@@ -29,9 +29,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.syncroapp.launcher.core.data.modelo.Alineacion
 import dev.syncroapp.launcher.core.data.modelo.GrosorTrazo
+import dev.syncroapp.launcher.core.data.modelo.TamanoDia
 import dev.syncroapp.launcher.core.ui.tema.Espacio
 import dev.syncroapp.launcher.core.ui.tema.TemaLauncher
 import dev.syncroapp.launcher.core.ui.tema.anchoTrazoDe
+import dev.syncroapp.launcher.core.ui.tema.rangoTamanoDia
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -49,6 +51,7 @@ fun RelojGigante(
     instante: LocalDateTime,
     formato24h: Boolean,
     mostrarDiaGigante: Boolean,
+    tamanoDia: TamanoDia,
     mostrarFecha: Boolean,
     grosorTrazo: GrosorTrazo,
     alineacion: Alineacion,
@@ -111,6 +114,7 @@ fun RelojGigante(
 
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 val anchoDisponible = maxWidth
+                val rango = rangoTamanoDia(tamanoDia)
 
                 val estiloDia = TextStyle(
                     fontFamily = tipografia.familiaDisplay,
@@ -118,26 +122,34 @@ fun RelojGigante(
                     letterSpacing = (-1).sp,
                     color = colores.textoPrimario,
                     drawStyle = Stroke(
-                        width = with(LocalDensity.current) { anchoTrazoDe(grosorTrazo).toPx() },
+                        width = with(LocalDensity.current) {
+                            anchoTrazoDe(grosorTrazo, tamanoDia).toPx()
+                        },
                         join = StrokeJoin.Round, // sin picos en los vertices de la W y la N
                         cap = StrokeCap.Round,
                     ),
                 )
 
-                val tamanoDia = tamanoQueCabe(
+                val tamanoCalculado = tamanoQueCabe(
                     texto = textoDia,
                     estiloBase = estiloDia,
                     anchoMaximoDp = anchoDisponible,
-                    minSp = tipografia.diaGiganteMinSp,
-                    maxSp = tipografia.diaGiganteMaxSp,
+                    minSp = rango.start,
+                    maxSp = rango.endInclusive,
                 )
 
                 Text(
                     text = textoDia,
-                    style = estiloDia.copy(fontSize = tamanoDia),
+                    style = estiloDia.copy(fontSize = tamanoCalculado),
                     maxLines = 1,
                     softWrap = false,
-                    textAlign = TextAlign.Center,
+                    // Cuando el dia no llena el ancho (tamano pequeno o mediano) tiene que
+                    // seguir la alineacion global, o queda flotando sin relacion con la hora.
+                    textAlign = when (alineacion) {
+                        Alineacion.IZQUIERDA -> TextAlign.Start
+                        Alineacion.CENTRO -> TextAlign.Center
+                        Alineacion.DERECHA -> TextAlign.End
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.Center)

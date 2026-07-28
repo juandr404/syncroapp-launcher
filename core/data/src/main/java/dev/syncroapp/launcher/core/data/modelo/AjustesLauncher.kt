@@ -18,6 +18,12 @@ enum class Tema { DARK_PURO, DARK_SUAVE, CLARO, SEGUN_SISTEMA }
 /** Grosor del trazo del dia gigante en outline. */
 enum class GrosorTrazo { FINO, MEDIO, GRUESO }
 
+/**
+ * Tamano del dia de la semana.
+ * GRANDE lo lleva a sangre de borde a borde; PEQUENO lo deja como un detalle junto a la hora.
+ */
+enum class TamanoDia { PEQUENO, MEDIANO, GRANDE }
+
 /** Estilo de los iconos de la lista de apps. */
 enum class EstiloIconos {
     /** Sin iconos: la lista es solo texto. Default del producto. */
@@ -60,6 +66,7 @@ data class AjustesLauncher(
     // --- Reloj ---
     val formato24h: Boolean = true,
     val mostrarDiaGigante: Boolean = true,
+    val tamanoDia: TamanoDia = TamanoDia.MEDIANO,
     val mostrarFecha: Boolean = true,
     val grosorTrazo: GrosorTrazo = GrosorTrazo.MEDIO,
     /** true = el dia de la semana se muestra en ingles ("WED") ignorando el idioma del sistema. */

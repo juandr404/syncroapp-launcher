@@ -21,10 +21,6 @@ data class TipografiaLauncher(
     val familiaDisplay: FontFamily = FontFamily.SansSerif,
     val familiaTexto: FontFamily = FontFamily.SansSerif,
 ) {
-    /** Rango del dia de la semana en contorno. Se auto-escala dentro de estos limites. */
-    val diaGiganteMinSp: Float = 96f
-    val diaGiganteMaxSp: Float = 172f
-
     val hora = TextStyle(
         fontFamily = familiaDisplay,
         fontWeight = FontWeight.SemiBold,

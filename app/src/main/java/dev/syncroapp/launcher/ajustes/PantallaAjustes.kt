@@ -33,7 +33,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.syncroapp.launcher.core.data.modelo.Alineacion
 import dev.syncroapp.launcher.core.data.modelo.Densidad
 import dev.syncroapp.launcher.core.data.modelo.GrosorTrazo
+import dev.syncroapp.launcher.core.data.modelo.TamanoDia
 import dev.syncroapp.launcher.core.data.modelo.Tema
+import dev.syncroapp.launcher.core.ui.componentes.EncabezadoPantalla
 import dev.syncroapp.launcher.core.ui.tema.ALTO_TACTIL_MINIMO
 import dev.syncroapp.launcher.core.ui.tema.Espacio
 import dev.syncroapp.launcher.core.ui.tema.TemaLauncher
@@ -65,7 +67,13 @@ fun PantallaAjustes(
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
-        item { TituloSeccion("Ajustes", primera = true) }
+        item {
+            EncabezadoPantalla(
+                titulo = "Ajustes",
+                onVolver = onCerrar,
+                modifier = Modifier.padding(top = Espacio.m, bottom = Espacio.s),
+            )
+        }
 
         // --- Pantalla de inicio del sistema ---
         item { TituloSeccion("Pantalla de inicio") }
@@ -129,10 +137,17 @@ fun PantallaAjustes(
         }
         item {
             FilaInterruptor(
-                titulo = "Mostrar el dia en grande",
+                titulo = "Mostrar el dia de la semana",
                 activo = ajustes.mostrarDiaGigante,
                 onCambio = viewModel::cambiarMostrarDiaGigante,
             )
+        }
+        if (ajustes.mostrarDiaGigante) {
+            item {
+                FilaOpcion("Tamano del dia", etiquetaTamanoDia(ajustes.tamanoDia)) {
+                    dialogoAbierto = DialogoOpciones.TAMANO_DIA
+                }
+            }
         }
         item {
             FilaInterruptor(
@@ -243,6 +258,14 @@ fun PantallaAjustes(
             onCerrar = { dialogoAbierto = null },
         )
 
+        DialogoOpciones.TAMANO_DIA -> DialogoSeleccion(
+            titulo = "Tamano del dia",
+            opciones = TamanoDia.entries.map { it to etiquetaTamanoDia(it) },
+            seleccionActual = ajustes.tamanoDia,
+            onSeleccionar = viewModel::cambiarTamanoDia,
+            onCerrar = { dialogoAbierto = null },
+        )
+
         null -> Unit
     }
 
@@ -273,7 +296,7 @@ fun PantallaAjustes(
     }
 }
 
-private enum class DialogoOpciones { TEMA, ALINEACION, DENSIDAD, GROSOR }
+private enum class DialogoOpciones { TEMA, ALINEACION, DENSIDAD, GROSOR, TAMANO_DIA }
 
 // --- Componentes de la pantalla de ajustes ---
 
@@ -428,4 +451,10 @@ private fun etiquetaGrosor(grosor: GrosorTrazo): String = when (grosor) {
     GrosorTrazo.FINO -> "Fino"
     GrosorTrazo.MEDIO -> "Medio"
     GrosorTrazo.GRUESO -> "Grueso"
+}
+
+private fun etiquetaTamanoDia(tamano: TamanoDia): String = when (tamano) {
+    TamanoDia.PEQUENO -> "Pequeno"
+    TamanoDia.MEDIANO -> "Mediano"
+    TamanoDia.GRANDE -> "Grande"
 }
