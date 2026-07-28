@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Que se respalda al cambiar de dispositivo (Android 12+).
+    Se incluye la configuracion (ajustes.json) y se excluyen las caches: no tiene sentido
+    mover archivos temporales de un telefono a otro.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="datastore" />
+        <exclude domain="file" path="cache" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="datastore" />
+        <exclude domain="file" path="cache" />
+    </device-transfer>
+</data-extraction-rules>

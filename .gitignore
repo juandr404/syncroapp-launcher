@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+*/build/
+*/*/build/
+
+# Rutas y secretos locales (local.properties tiene la ruta del SDK de cada maquina)
+local.properties
+keystore.properties
+*.jks
+*.keystore
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Artefactos de compilacion
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

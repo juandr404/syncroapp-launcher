@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Marca del launcher: un reloj reducido a lo minimo, dibujado solo con trazo.
+    Coherente con el producto: contorno, sin relleno, sin color.
+    Lienzo 108x108 con la zona segura interior de 72x72 (guias de iconos adaptativos).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Circunferencia -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M32,54 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0" />
+
+    <!-- Manecillas -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M54,41 L54,54 L63,59" />
+</vector>

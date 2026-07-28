@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Red de seguridad para listar aplicaciones.
+        Los launchers (intent-filter HOME) estan exentos del filtrado de visibilidad de paquetes
+        de Android 11+, asi que NO se declara QUERY_ALL_PACKAGES. Este bloque <queries> cubre el
+        caso de estar instalado pero todavia no ser el launcher predeterminado.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <!--
+        Permiso normal (no requiere confirmacion del usuario) para el gesto de deslizar
+        hacia abajo. Si el fabricante lo bloquea, la funcion simplemente no hace nada.
+    -->
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
+
+    <application
+        android:name=".SyncroLauncherApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/reglas_extraccion_datos"
+        android:fullBackupContent="@xml/reglas_respaldo"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/nombre_app"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.SyncroLauncher">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:excludeFromRecents="true"
+            android:screenOrientation="nosensor"
+            android:configChanges="keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|fontScale"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.SyncroLauncher">
+
+            <!-- HOME + DEFAULT: esto es lo que convierte la app en un launcher elegible. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
