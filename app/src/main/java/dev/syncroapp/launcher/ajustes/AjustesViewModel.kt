@@ -14,8 +14,8 @@ import dev.syncroapp.launcher.core.data.modelo.GrosorTrazo
 import dev.syncroapp.launcher.core.data.modelo.TamanoDia
 import dev.syncroapp.launcher.core.data.modelo.Tema
 import dev.syncroapp.launcher.core.launcherapps.AplicacionInstalada
-import dev.syncroapp.launcher.core.launcherapps.FuenteApps
 import dev.syncroapp.launcher.core.launcherapps.EstadoGestos
+import dev.syncroapp.launcher.core.launcherapps.FuenteApps
 import dev.syncroapp.launcher.core.launcherapps.GestorLauncherPredeterminado
 import dev.syncroapp.launcher.core.launcherapps.GuardianDeGestos
 import kotlinx.coroutines.flow.SharingStarted

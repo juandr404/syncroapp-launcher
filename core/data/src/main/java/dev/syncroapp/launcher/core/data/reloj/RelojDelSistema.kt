@@ -39,8 +39,8 @@ class RelojDelSistema @Inject constructor(
         }
 
         val filtro = IntentFilter().apply {
-            addAction(Intent.ACTION_TIME_TICK)      // cada cambio de minuto
-            addAction(Intent.ACTION_TIME_CHANGED)   // el usuario cambio la hora
+            addAction(Intent.ACTION_TIME_TICK) // cada cambio de minuto
+            addAction(Intent.ACTION_TIME_CHANGED) // el usuario cambio la hora
             addAction(Intent.ACTION_TIMEZONE_CHANGED)
             addAction(Intent.ACTION_DATE_CHANGED)
             addAction(Intent.ACTION_LOCALE_CHANGED) // cambio de idioma: cambia el nombre del dia

@@ -1,0 +1,56 @@
+# Configuracion de detekt para SyncroApp Launcher.
+# Se construye sobre los valores por defecto (buildUponDefaultConfig = true): aqui solo van
+# las desviaciones, con el motivo de cada una.
+
+style:
+  MaxLineLength:
+    maxLineLength: 110
+  # Los codigos de color, tamanos en dp/sp y duraciones en ms se leen mejor literales que
+  # detras de una constante con nombre inventado.
+  MagicNumber:
+    active: false
+  # Kotlin idiomatico usa retornos tempranos como guardas; obligar a uno solo empeora el codigo.
+  ReturnCount:
+    active: false
+
+complexity:
+  # Las funciones @Composable acumulan parametros por naturaleza (estado + callbacks).
+  LongParameterList:
+    active: false
+  # Una pantalla declarativa es una lista larga de elementos: partirla en veinte funciones
+  # de un solo uso no la hace mas legible, solo dispersa el orden visual entre archivos.
+  LongMethod:
+    threshold: 90
+    ignoreAnnotated: ['Composable']
+  CyclomaticComplexMethod:
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    # Un ViewModel de pantalla de ajustes tiene una funcion por opcion; es su trabajo.
+    thresholdInClasses: 40
+    thresholdInFiles: 40
+
+naming:
+  FunctionNaming:
+    # Los @Composable van en PascalCase por convencion de Compose.
+    ignoreAnnotated: ['Composable']
+  # Los archivos se nombran por el concepto (Tipografia.kt) y la clase lleva sufijo
+  # (TipografiaLauncher) para no chocar con los tipos de Compose. Es deliberado.
+  MatchingDeclarationName:
+    active: false
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][A-Z0-9_]*|[a-z][A-Za-z0-9]*'
+
+exceptions:
+  # runCatching alrededor de llamadas al sistema Android es deliberado: una app desinstalada
+  # entre el dibujado y el toque no debe tumbar el launcher.
+  TooGenericExceptionCaught:
+    active: false
+  SwallowedException:
+    active: false
+
+formatting:
+  # El proyecto documenta con comentarios largos en espanol; envolverlos rompe la lectura.
+  MaximumLineLength:
+    active: false
+  ArgumentListWrapping:
+    active: false

@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Que se respalda al cambiar de dispositivo (Android 12+).
-    Se incluye la configuracion (ajustes.json) y se excluyen las caches: no tiene sentido
-    mover archivos temporales de un telefono a otro.
+
+    Se incluye unicamente "datastore", donde vive ajustes.json con la configuracion y los
+    favoritos. Al declarar un <include> explicito, TODO lo demas queda fuera por defecto:
+    las caches de iconos no se copian sin necesidad de excluirlas (y de hecho no podrian
+    excluirse aqui, porque viven en el dominio "cache", no en "file").
 -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="file" path="datastore" />
-        <exclude domain="file" path="cache" />
     </cloud-backup>
     <device-transfer>
         <include domain="file" path="datastore" />
-        <exclude domain="file" path="cache" />
     </device-transfer>
 </data-extraction-rules>

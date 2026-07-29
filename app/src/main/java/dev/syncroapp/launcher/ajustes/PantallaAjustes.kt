@@ -27,21 +27,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.syncroapp.launcher.core.data.modelo.Alineacion
 import dev.syncroapp.launcher.core.data.modelo.Densidad
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import dev.syncroapp.launcher.core.data.modelo.EstiloIconos
 import dev.syncroapp.launcher.core.data.modelo.EstiloReloj
-import dev.syncroapp.launcher.core.launcherapps.EstadoGestos
-import dev.syncroapp.launcher.core.launcherapps.GuardianDeGestos
 import dev.syncroapp.launcher.core.data.modelo.GrosorTrazo
 import dev.syncroapp.launcher.core.data.modelo.TamanoDia
 import dev.syncroapp.launcher.core.data.modelo.Tema
+import dev.syncroapp.launcher.core.launcherapps.EstadoGestos
+import dev.syncroapp.launcher.core.launcherapps.GuardianDeGestos
 import dev.syncroapp.launcher.core.ui.componentes.EncabezadoPantalla
 import dev.syncroapp.launcher.core.ui.tema.ALTO_TACTIL_MINIMO
 import dev.syncroapp.launcher.core.ui.tema.Espacio
@@ -406,7 +406,16 @@ fun PantallaAjustes(
     }
 }
 
-private enum class DialogoOpciones { TEMA, ALINEACION, DENSIDAD, GROSOR, TAMANO_DIA, ICONOS, ESTILO_RELOJ, AYUDA_GESTOS }
+private enum class DialogoOpciones {
+    TEMA,
+    ALINEACION,
+    DENSIDAD,
+    GROSOR,
+    TAMANO_DIA,
+    ICONOS,
+    ESTILO_RELOJ,
+    AYUDA_GESTOS,
+}
 
 // --- Componentes de la pantalla de ajustes ---
 

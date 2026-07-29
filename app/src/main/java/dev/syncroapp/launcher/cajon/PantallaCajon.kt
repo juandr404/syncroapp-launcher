@@ -26,6 +26,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -187,7 +192,19 @@ private fun CampoBusqueda(
             keyboardActions = KeyboardActions(onGo = { onBuscar() }),
             modifier = Modifier
                 .fillMaxWidth()
-                .focusRequester(enfoque),
+                .focusRequester(enfoque)
+                // La accion "Ir" del teclado en pantalla cubre el caso normal, pero un teclado
+                // fisico o Bluetooth manda una tecla Enter cruda que Compose no traduce a
+                // ImeAction. Sin esto, Enter no hace nada con un teclado conectado.
+                .onPreviewKeyEvent { evento ->
+                    val esEnter = evento.key == Key.Enter || evento.key == Key.NumPadEnter
+                    if (esEnter && evento.type == KeyEventType.KeyUp) {
+                        onBuscar()
+                        true
+                    } else {
+                        false
+                    }
+                },
             decorationBox = { campo ->
                 Box {
                     if (texto.isEmpty()) {

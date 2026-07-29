@@ -24,11 +24,22 @@ jobs:
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Analisis estatico (detekt)
+        run: ./gradlew detekt --stacktrace
+
       - name: Pruebas unitarias
         run: ./gradlew test --stacktrace
 
+      - name: Revision de lint (variante de release)
+        run: ./gradlew lintRelease --stacktrace
+
       - name: Compilar APK de depuracion
         run: ./gradlew assembleDebug --stacktrace
+
+      # La variante de release aplica R8: encuentra fallas de keep rules que la de
+      # depuracion no puede ver, y hay que detectarlas antes de instalar nada.
+      - name: Compilar APK de release (R8)
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Publicar el APK como artefacto
         uses: actions/upload-artifact@v4
@@ -36,3 +47,13 @@ jobs:
           name: syncroapp-launcher-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publicar los reportes de analisis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportes
+          path: |
+            **/build/reports/detekt/
+            **/build/reports/tests/
+          if-no-files-found: ignore

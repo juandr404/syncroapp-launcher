@@ -8,11 +8,11 @@ import dev.syncroapp.launcher.core.data.modelo.AjustesLauncher
 import dev.syncroapp.launcher.core.launcherapps.GestorLauncherPredeterminado
 import dev.syncroapp.launcher.core.launcherapps.GuardianDeGestos
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**

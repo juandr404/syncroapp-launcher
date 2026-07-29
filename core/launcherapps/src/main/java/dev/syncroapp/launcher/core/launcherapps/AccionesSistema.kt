@@ -100,8 +100,8 @@ class AccionesSistema @Inject constructor(
         const val TAG = "AccionesSistema"
 
         val PAQUETES_RELOJ = listOf(
-            "com.android.deskclock",          // MIUI y AOSP
-            "com.google.android.deskclock",   // Reloj de Google
+            "com.android.deskclock", // MIUI y AOSP
+            "com.google.android.deskclock", // Reloj de Google
             "com.sec.android.app.clockpackage", // Samsung
         )
 

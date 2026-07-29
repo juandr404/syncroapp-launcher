@@ -97,7 +97,11 @@ class CargadorIconos @Inject constructor(
         }
 
         val fuente = (adaptativo?.foreground ?: drawable).mutate()
-        if (adaptativo != null) expandirCapaAdaptativa(fuente, tamanoPx) else fuente.setBounds(0, 0, tamanoPx, tamanoPx)
+        if (adaptativo != null) {
+            expandirCapaAdaptativa(fuente, tamanoPx)
+        } else {
+            fuente.setBounds(0, 0, tamanoPx, tamanoPx)
+        }
         fuente.colorFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
         fuente.draw(lienzo)
         fuente.clearColorFilter()

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Equivalente de las reglas de respaldo para Android 11 y anteriores. -->
+<!--
+    Equivalente de las reglas de respaldo para Android 11 y anteriores.
+    Solo la configuracion; declarar un <include> deja fuera todo lo demas.
+-->
 <full-backup-content>
     <include domain="file" path="datastore" />
-    <exclude domain="file" path="cache" />
 </full-backup-content>
