@@ -83,6 +83,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Gestos de navegacion propios, para los telefonos donde el sistema los desactiva al
+            usar un launcher externo (MIUI y capas similares). Queda inactivo mientras el usuario
+            no lo habilite en los ajustes de accesibilidad; la app funciona igual sin el.
+        -->
+        <service
+            android:name=".gestos.ServicioGestosBorde"
+            android:exported="true"
+            android:label="@string/nombre_servicio_gestos"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/servicio_gestos" />
+        </service>
     </application>
 
 </manifest>

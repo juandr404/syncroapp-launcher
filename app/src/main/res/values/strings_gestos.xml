@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Textos que muestra la pantalla de accesibilidad del sistema. Tienen que explicar
+         con exactitud que hace el servicio: es el permiso mas sensible que pide la app. -->
+    <string name="nombre_servicio_gestos">Gestos de navegacion de SyncroApp</string>
+    <string name="resumen_servicio_gestos">Deslice desde los bordes para volver atras o ver las aplicaciones abiertas</string>
+    <string name="descripcion_servicio_gestos">Agrega gestos de navegacion en los teléfonos donde el sistema los desactiva al usar un launcher distinto al del fabricante.\n\nSolo dibuja tres zonas invisibles en los bordes de la pantalla y ejecuta las acciones de volver atrás y de aplicaciones recientes. No lee el contenido de la pantalla, no registra lo que usted escribe y no envía nada a ninguna parte: esta aplicación no tiene permiso de internet.</string>
+</resources>

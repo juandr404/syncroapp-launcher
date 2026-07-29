@@ -246,6 +246,23 @@ fun PantallaAjustes(
             }
             item {
                 FilaAccion(
+                    titulo = if (estado.gestosPropiosActivos) {
+                        "Gestos propios: activos"
+                    } else {
+                        "Activar gestos propios (en prueba)"
+                    },
+                    detalle = if (estado.gestosPropiosActivos) {
+                        "Deslice desde el borde izquierdo o derecho para volver atras, " +
+                            "y desde el borde inferior hacia arriba para ver las apps abiertas."
+                    } else {
+                        "Reemplazo para los gestos que MIUI desactiva. Se habilita en los " +
+                            "ajustes de accesibilidad del sistema."
+                    },
+                    onClick = { contexto.startActivity(viewModel.intentGestosPropios()) },
+                )
+            }
+            item {
+                FilaAccion(
                     titulo = "Por que los gestos no funcionan en Xiaomi",
                     detalle = null,
                     onClick = { dialogoAbierto = DialogoOpciones.AYUDA_GESTOS },

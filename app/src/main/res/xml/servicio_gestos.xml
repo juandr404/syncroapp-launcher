@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Configuracion del servicio de gestos de borde.
+
+    Deliberadamente minima: NO se pide canRetrieveWindowContent ni se escucha ningun tipo de
+    evento de accesibilidad. El servicio solo necesita existir para poder dibujar sus tiras de
+    borde y ejecutar performGlobalAction. No lee nada de la pantalla.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="false"
+    android:description="@string/descripcion_servicio_gestos"
+    android:notificationTimeout="100"
+    android:summary="@string/resumen_servicio_gestos" />

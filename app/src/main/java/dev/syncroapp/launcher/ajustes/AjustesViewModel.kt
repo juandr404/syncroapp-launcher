@@ -18,6 +18,7 @@ import dev.syncroapp.launcher.core.launcherapps.EstadoGestos
 import dev.syncroapp.launcher.core.launcherapps.FuenteApps
 import dev.syncroapp.launcher.core.launcherapps.GestorLauncherPredeterminado
 import dev.syncroapp.launcher.core.launcherapps.GuardianDeGestos
+import dev.syncroapp.launcher.gestos.GestorGestosPropios
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -32,6 +33,8 @@ data class EstadoAjustes(
     val esPredeterminado: Boolean = true,
     /** Estado de los gestos del sistema; NO_APLICA en equipos que no son Xiaomi. */
     val estadoGestos: EstadoGestos = EstadoGestos.NO_APLICA,
+    /** true si el servicio de gestos propios esta habilitado en accesibilidad. */
+    val gestosPropiosActivos: Boolean = false,
 )
 
 @HiltViewModel
@@ -40,6 +43,7 @@ class AjustesViewModel @Inject constructor(
     fuenteApps: FuenteApps,
     private val gestorPredeterminado: GestorLauncherPredeterminado,
     private val guardianDeGestos: GuardianDeGestos,
+    private val gestosPropios: GestorGestosPropios,
 ) : ViewModel() {
 
     val estado: StateFlow<EstadoAjustes> = combine(
@@ -51,6 +55,7 @@ class AjustesViewModel @Inject constructor(
             appsOcultas = apps.filter { it.claveEstable in ajustes.appsOcultas },
             esPredeterminado = gestorPredeterminado.esPredeterminado(),
             estadoGestos = guardianDeGestos.estado(),
+            gestosPropiosActivos = gestosPropios.estaActivo(),
         )
     }.stateIn(
         scope = viewModelScope,
@@ -85,6 +90,9 @@ class AjustesViewModel @Inject constructor(
     fun volverABotones() = guardianDeGestos.volverABotones()
 
     fun tienePermisoDeAjustes(): Boolean = guardianDeGestos.tienePermiso()
+
+    /** Lleva a la pantalla del sistema donde se activa el servicio de gestos propios. */
+    fun intentGestosPropios(): Intent = gestosPropios.intentAjustesAccesibilidad()
 
     // --- Busqueda ---
     fun cambiarTecladoAutomatico(valor: Boolean) = actualizar { it.copy(tecladoAutomatico = valor) }
