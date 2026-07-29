@@ -45,19 +45,20 @@ class ServicioGestosBorde : AccessibilityService() {
         super.onServiceConnected()
         ventanas = getSystemService(WINDOW_SERVICE) as WindowManager
 
+        val lateralIzquierdo = Gravity.START or Gravity.CENTER_VERTICAL
+        val lateralDerecho = Gravity.END or Gravity.CENTER_VERTICAL
+        val inferior = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+
         // Bordes izquierdo y derecho: deslizar hacia el centro = atras.
-        agregarTira(Gravity.START or Gravity.CENTER_VERTICAL, ANCHO_LATERAL_PX, ALTO_LATERAL_PX) {
-            dx, dy ->
+        agregarTira(lateralIzquierdo, ANCHO_LATERAL_PX, ALTO_LATERAL_PX) { dx, dy ->
             if (dx > UMBRAL_PX && abs(dx) > abs(dy)) Accion.ATRAS else null
         }
-        agregarTira(Gravity.END or Gravity.CENTER_VERTICAL, ANCHO_LATERAL_PX, ALTO_LATERAL_PX) {
-            dx, dy ->
+        agregarTira(lateralDerecho, ANCHO_LATERAL_PX, ALTO_LATERAL_PX) { dx, dy ->
             if (dx < -UMBRAL_PX && abs(dx) > abs(dy)) Accion.ATRAS else null
         }
 
         // Borde inferior: deslizar hacia arriba = aplicaciones recientes.
-        agregarTira(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, ANCHO_INFERIOR_PX, ALTO_INFERIOR_PX) {
-            dx, dy ->
+        agregarTira(inferior, ANCHO_INFERIOR_PX, ALTO_INFERIOR_PX) { dx, dy ->
             if (dy < -UMBRAL_PX && abs(dy) > abs(dx)) Accion.RECIENTES else null
         }
 
