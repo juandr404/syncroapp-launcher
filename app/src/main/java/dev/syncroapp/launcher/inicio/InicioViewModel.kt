@@ -45,6 +45,8 @@ data class EstadoInicio(
      * por eso es la que decide si mostrar las instrucciones iniciales sin hacer esperar a nadie.
      */
     val sinFavoritosGuardados: Boolean = false,
+    /** Accesos del dock inferior, resueltos igual que los favoritos. */
+    val dock: List<FavoritoResuelto> = emptyList(),
 )
 
 @HiltViewModel
@@ -87,10 +89,11 @@ class InicioViewModel @Inject constructor(
     ) { instante, apps, ajustes, predeterminado ->
         EstadoInicio(
             instante = instante,
-            favoritos = resolverFavoritos(ajustes, apps),
+            favoritos = resolver(ajustes.favoritos, apps),
             ajustes = ajustes,
             esPredeterminado = predeterminado,
             sinFavoritosGuardados = ajustes.favoritos.isEmpty(),
+            dock = resolver(ajustes.dock, apps),
         )
     }.stateIn(
         scope = viewModelScope,
@@ -107,13 +110,13 @@ class InicioViewModel @Inject constructor(
      * version fresca del sistema y los que apuntan a apps desinstaladas desaparecen, con lo que
      * la lista se autorrepara sin dejar entradas muertas que crasheen al tocarlas.
      */
-    private fun resolverFavoritos(
-        ajustes: AjustesLauncher,
+    private fun resolver(
+        guardados: List<dev.syncroapp.launcher.core.data.modelo.FavoritoGuardado>,
         apps: List<AplicacionInstalada>,
     ): List<FavoritoResuelto> {
         val listaDelSistemaLista = apps.isNotEmpty()
 
-        return ajustes.favoritos.mapNotNull { guardado ->
+        return guardados.mapNotNull { guardado ->
             val appDelSistema = apps.firstOrNull { guardado.apuntaA(it) }
 
             when {
@@ -152,6 +155,14 @@ class InicioViewModel @Inject constructor(
     fun quitarDeFavoritos(app: AplicacionInstalada) = viewModelScope.launch {
         acciones.alternarFavorito(app, esFavorito = true)
     }
+
+    fun alternarEnDock(app: AplicacionInstalada) = viewModelScope.launch {
+        acciones.alternarEnDock(app)
+    }
+
+    /** true si la app ya esta en el dock (para saber si el menu dice agregar o quitar). */
+    fun estaEnDock(app: AplicacionInstalada): Boolean =
+        estado.value.dock.any { it.app.claveEstable == app.claveEstable }
 
     fun renombrar(app: AplicacionInstalada, alias: String?) = viewModelScope.launch {
         acciones.renombrar(app, alias)

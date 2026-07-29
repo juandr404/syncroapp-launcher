@@ -44,14 +44,18 @@ class RepositorioAjustes @Inject constructor(
      */
     private fun migrar(guardado: AjustesLauncher): AjustesLauncher {
         if (guardado.versionAjustes >= VERSION_ACTUAL) return guardado
-        return guardado.copy(
-            estiloIconos = if (guardado.estiloIconos == EstiloIconos.NINGUNO) {
-                EstiloIconos.ORIGINALES
-            } else {
-                guardado.estiloIconos
-            },
-            versionAjustes = VERSION_ACTUAL,
-        )
+
+        var migrado = guardado
+
+        // v0 -> v1
+        if (migrado.versionAjustes < 1 && migrado.estiloIconos == EstiloIconos.NINGUNO) {
+            migrado = migrado.copy(estiloIconos = EstiloIconos.ORIGINALES)
+        }
+
+        // v1 -> v2: el dock nace vacio. No se rellena solo con apps adivinadas; que aparezcan
+        // cinco circulos sin que el usuario los pidiera seria imponerle una decision.
+
+        return migrado.copy(versionAjustes = VERSION_ACTUAL)
     }
 
     // --- Favoritos ---
@@ -69,6 +73,18 @@ class RepositorioAjustes @Inject constructor(
     /** Quita un favorito por componente + usuario. */
     suspend fun quitarFavorito(favorito: FavoritoGuardado) = actualizar { actual ->
         actual.copy(favoritos = actual.favoritos.filterNot { it.esMismoQue(favorito) })
+    }
+
+    // --- Dock inferior ---
+
+    /** Alterna una app en el dock: la agrega si hay cupo, la quita si ya estaba. */
+    suspend fun alternarEnDock(acceso: FavoritoGuardado) = actualizar { actual ->
+        val yaEsta = actual.dock.any { it.esMismoQue(acceso) }
+        when {
+            yaEsta -> actual.copy(dock = actual.dock.filterNot { it.esMismoQue(acceso) })
+            actual.dock.size >= AjustesLauncher.MAX_DOCK -> actual
+            else -> actual.copy(dock = actual.dock + acceso)
+        }
     }
 
     /** Reordena la lista completa de favoritos (la UI envia el orden resultante del arrastre). */
@@ -124,7 +140,7 @@ class RepositorioAjustes @Inject constructor(
 
     private companion object {
         /** Subir en uno cada vez que se agregue un paso a [migrar]. */
-        const val VERSION_ACTUAL = 1
+        const val VERSION_ACTUAL = 2
     }
 }
 

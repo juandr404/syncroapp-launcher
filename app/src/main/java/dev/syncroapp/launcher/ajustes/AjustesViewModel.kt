@@ -79,12 +79,12 @@ class AjustesViewModel @Inject constructor(
     fun cambiarEstiloIconos(valor: EstiloIconos) = actualizar { it.copy(estiloIconos = valor) }
     fun cambiarDiaEnIngles(valor: Boolean) = actualizar { it.copy(diaEnIngles = valor) }
 
-    // --- Gestos del sistema ---
-    fun cambiarProtegerGestos(valor: Boolean) {
-        actualizar { it.copy(protegerGestos = valor) }
-        // Reponerlos de inmediato al activar, sin esperar el proximo regreso al inicio.
-        if (valor) guardianDeGestos.restaurarSiHaceFalta()
-    }
+    // --- Navegacion del sistema ---
+
+    /** Salida de emergencia: devuelve los botones si el telefono quedo sin forma de navegar. */
+    fun volverABotones() = guardianDeGestos.volverABotones()
+
+    fun tienePermisoDeAjustes(): Boolean = guardianDeGestos.tienePermiso()
 
     // --- Busqueda ---
     fun cambiarTecladoAutomatico(valor: Boolean) = actualizar { it.copy(tecladoAutomatico = valor) }

@@ -231,25 +231,22 @@ fun PantallaAjustes(
             }
         }
 
-        // --- Gestos del sistema: MIUI los apaga con launchers externos ---
+        // --- Navegacion del sistema: en MIUI los gestos no pueden funcionar (ver el dialogo) ---
         if (estado.estadoGestos != EstadoGestos.NO_APLICA) {
-            item { TituloSeccion("Gestos del sistema") }
-            item {
-                FilaInterruptor(
-                    titulo = "Mantener los gestos activos",
-                    detalle = when (estado.estadoGestos) {
-                        EstadoGestos.APAGADOS_SIN_PERMISO ->
-                            "Requiere un permiso que se concede por adb. Toque para ver como."
-                        EstadoGestos.ACTIVOS -> "Los gestos estan activos"
-                        else -> "MIUI los apago; se repondran al volver al inicio"
-                    },
-                    activo = ajustes.protegerGestos,
-                    onCambio = viewModel::cambiarProtegerGestos,
-                )
+            item { TituloSeccion("Navegacion del sistema") }
+            if (estado.estadoGestos == EstadoGestos.ACTIVOS_PERO_SIN_MANEJADOR) {
+                item {
+                    FilaAccion(
+                        titulo = "Recuperar los botones de navegacion",
+                        detalle = "Los gestos estan encendidos pero MIUI no los atiende: " +
+                            "el telefono queda sin forma de volver atras. Toque para arreglarlo.",
+                        onClick = { viewModel.volverABotones() },
+                    )
+                }
             }
             item {
                 FilaAccion(
-                    titulo = "Por que MIUI apaga los gestos",
+                    titulo = "Por que los gestos no funcionan en Xiaomi",
                     detalle = null,
                     onClick = { dialogoAbierto = DialogoOpciones.AYUDA_GESTOS },
                 )
@@ -347,19 +344,19 @@ fun PantallaAjustes(
                 title = { Text("Gestos en Xiaomi", color = colores.textoPrimario) },
                 text = {
                     Text(
-                        "MIUI desactiva los gestos de pantalla completa cuando el launcher " +
-                            "predeterminado no es el suyo, y los vuelve a desactivar cada cierto " +
-                            "tiempo aunque se reactiven a mano. No es una falla de esta app: le " +
-                            "ocurre a todos los launchers externos.\n\n" +
-                            "Esta app puede reponerlos sola, pero para escribir un ajuste del " +
-                            "sistema necesita un permiso que solo se concede por adb (por " +
-                            "seguridad no existe forma de pedirlo desde un dialogo).\n\n" +
-                            "1. Active \"Depuracion USB (ajustes de seguridad)\" en Opciones de " +
-                            "desarrollador.\n" +
-                            "2. Con el telefono conectado, ejecute una sola vez:\n\n" +
-                            GuardianDeGestos.COMANDO_PARA_OTORGAR + "\n\n" +
-                            "3. Active \"Mantener los gestos activos\".\n\n" +
-                            "Para revocarlo, reemplace 'grant' por 'revoke' en el mismo comando.",
+                        "En este telefono los gestos de atras, inicio y aplicaciones recientes " +
+                            "los implementa el launcher de Xiaomi, no Android. Es el unico que " +
+                            "ofrece el servicio del sistema encargado de esos gestos.\n\n" +
+                            "Cuando otro launcher pasa a ser el predeterminado, MIUI deja de " +
+                            "atenderlos y no pone un reemplazo. Encender los gestos a la fuerza " +
+                            "solo esconde los botones sin devolver la navegacion, y el telefono " +
+                            "queda sin ninguna forma de salir de una aplicacion.\n\n" +
+                            "Por eso esta app ya no los enciende: en Xiaomi la opcion sana es " +
+                            "usar los botones de navegacion. En Android puro (Pixel) esta " +
+                            "limitacion no existe y los gestos funcionan con cualquier launcher.\n\n" +
+                            "Si quedo sin botones y sin gestos, la salida manual es:\n" +
+                            "Ajustes de MIUI → Ajustes adicionales → Pantalla completa → " +
+                            "Botones de navegacion.",
                         color = colores.textoSecundario,
                     )
                 },
@@ -369,9 +366,17 @@ fun PantallaAjustes(
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = {
-                        portapapeles.setText(AnnotatedString(GuardianDeGestos.COMANDO_PARA_OTORGAR))
-                    }) { Text("Copiar comando", color = colores.textoSecundario) }
+                    // Solo tiene sentido si el telefono quedo sin navegacion: el permiso habilita
+                    // el boton de emergencia que devuelve los botones desde la propia app.
+                    if (estado.estadoGestos == EstadoGestos.ACTIVOS_PERO_SIN_MANEJADOR &&
+                        !viewModel.tienePermisoDeAjustes()
+                    ) {
+                        TextButton(onClick = {
+                            portapapeles.setText(
+                                AnnotatedString(GuardianDeGestos.COMANDO_PARA_OTORGAR),
+                            )
+                        }) { Text("Copiar comando adb", color = colores.textoSecundario) }
+                    }
                 },
             )
         }

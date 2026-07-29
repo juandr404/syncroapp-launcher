@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -25,6 +26,8 @@ import dev.syncroapp.launcher.comun.MenuContextualApp
 import dev.syncroapp.launcher.comun.OpcionMenu
 import dev.syncroapp.launcher.comun.rememberIconoApp
 import dev.syncroapp.launcher.core.data.modelo.EstiloIconos
+import dev.syncroapp.launcher.core.ui.componentes.AccesoDock
+import dev.syncroapp.launcher.core.ui.componentes.DockAccesos
 import dev.syncroapp.launcher.core.ui.componentes.FilaApp
 import dev.syncroapp.launcher.core.ui.componentes.RelojGigante
 import dev.syncroapp.launcher.core.ui.gestos.gestosPantallaInicio
@@ -69,10 +72,15 @@ fun PantallaInicio(
         // El bloque del reloj arranca a un 12% de la altura util, con tope de 96 dp.
         val margenSuperior = (maxHeight * 0.12f).coerceAtMost(96.dp)
 
+        // El contenido y el dock van en capas separadas, no como hermanos de una misma columna:
+        // si el dock fuera el ultimo hijo de la columna, una lista larga lo comprimiria y sus
+        // circulos se dibujarian como elipses aplastadas.
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing),
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                // Reserva el alto del dock para que la lista nunca se le meta debajo.
+                .padding(bottom = if (estado.dock.isEmpty()) 0.dp else ALTO_RESERVADO_DOCK),
         ) {
             Spacer(modifier = Modifier.height(margenSuperior))
 
@@ -121,6 +129,29 @@ fun PantallaInicio(
                 )
             }
         }
+
+        DockAccesos(
+            accesos = estado.dock.map { acceso ->
+                AccesoDock(
+                    clave = acceso.app.claveEstable,
+                    etiqueta = acceso.etiquetaVisible,
+                    icono = rememberIconoApp(
+                        app = acceso.app,
+                        estilo = EstiloIconos.MONOCROMO,
+                        tamano = TAMANO_ICONO_DOCK,
+                        cargador = viewModel.cargadorIconos,
+                    ),
+                )
+            },
+            onAbrir = { clave ->
+                estado.dock.firstOrNull { it.app.claveEstable == clave }
+                    ?.let { viewModel.abrirApp(it.app) }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(bottom = Espacio.l),
+        )
     }
 
     appDelMenu?.let { favorito ->
@@ -128,6 +159,9 @@ fun PantallaInicio(
             titulo = favorito.etiquetaVisible,
             opciones = listOf(
                 OpcionMenu("Renombrar") { appARenombrar = favorito },
+                OpcionMenu(
+                    if (viewModel.estaEnDock(favorito.app)) "Quitar del dock" else "Agregar al dock",
+                ) { viewModel.alternarEnDock(favorito.app) },
                 OpcionMenu("Quitar de favoritos") { viewModel.quitarDeFavoritos(favorito.app) },
                 OpcionMenu("Informacion de la app") { viewModel.abrirInfo(favorito.app) },
                 OpcionMenu("Desinstalar") { viewModel.desinstalar(favorito.app) },
@@ -144,6 +178,12 @@ fun PantallaInicio(
         )
     }
 }
+
+/** El icono del dock se rasteriza mas grande que el de la lista: el circulo le da aire. */
+private val TAMANO_ICONO_DOCK = 22.dp
+
+/** Diametro del circulo (46) + su separacion del borde (24) + aire respecto a la lista. */
+private val ALTO_RESERVADO_DOCK = 86.dp
 
 /**
  * Estado vacio: explica los dos gestos que hacen falta para empezar.

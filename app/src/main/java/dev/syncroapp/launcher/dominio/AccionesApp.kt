@@ -33,6 +33,11 @@ class AccionesApp @Inject constructor(
         if (esFavorito) repositorio.quitarFavorito(favorito) else repositorio.agregarFavorito(favorito)
     }
 
+    /** Agrega o quita del dock inferior. */
+    suspend fun alternarEnDock(app: AplicacionInstalada) {
+        repositorio.alternarEnDock(app.aFavorito())
+    }
+
     /** Cambia el nombre visible. Un alias vacio restaura la etiqueta original. */
     suspend fun renombrar(app: AplicacionInstalada, alias: String?) {
         repositorio.renombrarFavorito(app.aFavorito(), alias)

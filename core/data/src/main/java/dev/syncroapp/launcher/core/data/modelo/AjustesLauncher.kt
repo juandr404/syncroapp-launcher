@@ -104,6 +104,11 @@ data class AjustesLauncher(
     val estiloIconos: EstiloIconos = EstiloIconos.ORIGINALES,
     /** Iconos de linea junto a los favoritos del inicio, como en el diseno de referencia. */
     val iconosEnFavoritos: Boolean = true,
+    /**
+     * Accesos del dock inferior (hasta [MAX_DOCK]). Se guardan igual que los favoritos.
+     * Vacio = sin dock: la pantalla queda con solo el reloj y la lista.
+     */
+    val dock: List<FavoritoGuardado> = emptyList(),
     /** Claves estables ("paquete/clase#serial") de apps ocultas del cajon y la busqueda. */
     val appsOcultas: Set<String> = emptySet(),
 
@@ -120,8 +125,11 @@ data class AjustesLauncher(
     // --- Onboarding ---
     val onboardingCompletado: Boolean = false,
 ) {
-    /** Maximo de favoritos que se muestran en el Home (mas que esto deja de ser un Home). */
     companion object {
+        /** Maximo de favoritos que se muestran en el Home (mas que esto deja de ser un Home). */
         const val MAX_FAVORITOS = 8
+
+        /** Cinco circulos es lo que cabe en el ancho de un telefono sin apretarlos. */
+        const val MAX_DOCK = 5
     }
 }
