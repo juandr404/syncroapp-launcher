@@ -15,7 +15,9 @@ import dev.syncroapp.launcher.core.data.modelo.TamanoDia
 import dev.syncroapp.launcher.core.data.modelo.Tema
 import dev.syncroapp.launcher.core.launcherapps.AplicacionInstalada
 import dev.syncroapp.launcher.core.launcherapps.FuenteApps
+import dev.syncroapp.launcher.core.launcherapps.EstadoGestos
 import dev.syncroapp.launcher.core.launcherapps.GestorLauncherPredeterminado
+import dev.syncroapp.launcher.core.launcherapps.GuardianDeGestos
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -28,6 +30,8 @@ data class EstadoAjustes(
     /** Apps ocultas ya resueltas, para poder mostrarlas de nuevo desde Ajustes. */
     val appsOcultas: List<AplicacionInstalada> = emptyList(),
     val esPredeterminado: Boolean = true,
+    /** Estado de los gestos del sistema; NO_APLICA en equipos que no son Xiaomi. */
+    val estadoGestos: EstadoGestos = EstadoGestos.NO_APLICA,
 )
 
 @HiltViewModel
@@ -35,6 +39,7 @@ class AjustesViewModel @Inject constructor(
     private val repositorio: RepositorioAjustes,
     fuenteApps: FuenteApps,
     private val gestorPredeterminado: GestorLauncherPredeterminado,
+    private val guardianDeGestos: GuardianDeGestos,
 ) : ViewModel() {
 
     val estado: StateFlow<EstadoAjustes> = combine(
@@ -45,6 +50,7 @@ class AjustesViewModel @Inject constructor(
             ajustes = ajustes,
             appsOcultas = apps.filter { it.claveEstable in ajustes.appsOcultas },
             esPredeterminado = gestorPredeterminado.esPredeterminado(),
+            estadoGestos = guardianDeGestos.estado(),
         )
     }.stateIn(
         scope = viewModelScope,
@@ -72,6 +78,13 @@ class AjustesViewModel @Inject constructor(
     fun cambiarIconosEnFavoritos(valor: Boolean) = actualizar { it.copy(iconosEnFavoritos = valor) }
     fun cambiarEstiloIconos(valor: EstiloIconos) = actualizar { it.copy(estiloIconos = valor) }
     fun cambiarDiaEnIngles(valor: Boolean) = actualizar { it.copy(diaEnIngles = valor) }
+
+    // --- Gestos del sistema ---
+    fun cambiarProtegerGestos(valor: Boolean) {
+        actualizar { it.copy(protegerGestos = valor) }
+        // Reponerlos de inmediato al activar, sin esperar el proximo regreso al inicio.
+        if (valor) guardianDeGestos.restaurarSiHaceFalta()
+    }
 
     // --- Busqueda ---
     fun cambiarTecladoAutomatico(valor: Boolean) = actualizar { it.copy(tecladoAutomatico = valor) }

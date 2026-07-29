@@ -6,6 +6,7 @@ import dev.syncroapp.launcher.core.data.modelo.EstiloIconos
 import dev.syncroapp.launcher.core.data.modelo.FavoritoGuardado
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 import javax.inject.Inject
@@ -86,6 +87,33 @@ class RepositorioAjustes @Inject constructor(
 
     // --- Apps ocultas ---
 
+    /**
+     * Pone al dia los nombres guardados de los favoritos.
+     *
+     * Cumple dos funciones: rellena los favoritos que se guardaron antes de que existiera la
+     * cache de nombres, y refresca los que cambiaron de nombre al actualizarse la app.
+     *
+     * @param etiquetasFrescas nombre real de cada app, por clave "paquete/clase/serial".
+     */
+    suspend fun sincronizarEtiquetas(etiquetasFrescas: Map<String, String>) {
+        val actuales = dataStore.data.first().favoritos
+        val hayCambios = actuales.any { favorito ->
+            val fresca = etiquetasFrescas[favorito.claveDeFavorito()]
+            fresca != null && fresca != favorito.etiquetaEnCache
+        }
+        // Sin esta guarda, cada emision del flujo dispararia una escritura y otra emision.
+        if (!hayCambios) return
+
+        actualizar { actual ->
+            actual.copy(
+                favoritos = actual.favoritos.map { favorito ->
+                    val fresca = etiquetasFrescas[favorito.claveDeFavorito()]
+                    if (fresca != null) favorito.copy(etiquetaEnCache = fresca) else favorito
+                },
+            )
+        }
+    }
+
     /** Alterna el estado oculto de una app identificada por su clave estable. */
     suspend fun alternarOculta(claveEstable: String) = actualizar { actual ->
         val ocultas = actual.appsOcultas
@@ -103,3 +131,9 @@ class RepositorioAjustes @Inject constructor(
 /** Dos favoritos son el mismo si apuntan al mismo componente del mismo usuario (el alias no cuenta). */
 private fun FavoritoGuardado.esMismoQue(otro: FavoritoGuardado): Boolean =
     paquete == otro.paquete && clase == otro.clase && serialUsuario == otro.serialUsuario
+
+/**
+ * Clave con el MISMO formato que `AplicacionInstalada.claveEstable`, para poder cruzarlas.
+ * Si el formato de una cambia, tiene que cambiar el de la otra.
+ */
+fun FavoritoGuardado.claveDeFavorito(): String = "$paquete/$clase#$serialUsuario"

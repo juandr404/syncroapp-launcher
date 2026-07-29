@@ -13,11 +13,13 @@ import dev.syncroapp.launcher.core.launcherapps.CargadorIconos
 import dev.syncroapp.launcher.core.launcherapps.FuenteApps
 import dev.syncroapp.launcher.core.launcherapps.GestorLauncherPredeterminado
 import dev.syncroapp.launcher.dominio.AccionesApp
+import dev.syncroapp.launcher.dominio.aAppDeCache
 import dev.syncroapp.launcher.dominio.apuntaA
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -59,6 +61,20 @@ class InicioViewModel @Inject constructor(
 
     private val esPredeterminado = MutableStateFlow(gestorPredeterminado.esPredeterminado())
 
+    init {
+        // En cuanto el sistema entrega la lista real, se ponen al dia los nombres guardados de
+        // los favoritos. Asi el proximo arranque puede dibujarlos sin esperar a nadie.
+        viewModelScope.launch {
+            fuenteApps.apps
+                .filter { it.isNotEmpty() }
+                .collect { apps ->
+                    repositorio.sincronizarEtiquetas(
+                        apps.associate { it.claveEstable to it.etiqueta },
+                    )
+                }
+        }
+    }
+
     /**
      * El estado se DERIVA de las fuentes reactivas; no se muta a mano en ningun lado.
      * Si se instala una app, cambia un ajuste o pasa un minuto, esto se recalcula solo.
@@ -83,17 +99,40 @@ class InicioViewModel @Inject constructor(
     )
 
     /**
-     * Cruza los favoritos guardados con las apps que existen de verdad.
+     * Resuelve los favoritos guardados, sin bloquearse esperando al sistema.
      *
-     * Los favoritos que apuntan a apps desinstaladas simplemente no se muestran: la lista se
-     * autorrepara sola en vez de dejar una entrada muerta que crashea al tocarla.
+     * Mientras la lista de apps todavia se lee (tarda segundos con cientos de apps instaladas),
+     * se dibujan desde el nombre guardado en la propia configuracion: la pantalla de inicio
+     * aparece completa de inmediato. Cuando la lista llega, cada favorito se reemplaza por su
+     * version fresca del sistema y los que apuntan a apps desinstaladas desaparecen, con lo que
+     * la lista se autorrepara sin dejar entradas muertas que crasheen al tocarlas.
      */
     private fun resolverFavoritos(
         ajustes: AjustesLauncher,
         apps: List<AplicacionInstalada>,
-    ): List<FavoritoResuelto> = ajustes.favoritos.mapNotNull { guardado ->
-        apps.firstOrNull { guardado.apuntaA(it) }?.let { app ->
-            FavoritoResuelto(app = app, etiquetaVisible = guardado.alias ?: app.etiqueta)
+    ): List<FavoritoResuelto> {
+        val listaDelSistemaLista = apps.isNotEmpty()
+
+        return ajustes.favoritos.mapNotNull { guardado ->
+            val appDelSistema = apps.firstOrNull { guardado.apuntaA(it) }
+
+            when {
+                appDelSistema != null -> FavoritoResuelto(
+                    app = appDelSistema,
+                    etiquetaVisible = guardado.alias ?: appDelSistema.etiqueta,
+                )
+                // La app ya no esta instalada: se descarta.
+                listaDelSistemaLista -> null
+                // Guardado antes de que existiera la cache de nombres: se espera al sistema
+                // en vez de dibujar una fila vacia. El init de arriba lo rellena para la
+                // proxima vez.
+                guardado.etiquetaEnCache.isBlank() -> null
+                // Todavia no sabemos si existe: se muestra con lo guardado en disco.
+                else -> FavoritoResuelto(
+                    app = guardado.aAppDeCache(),
+                    etiquetaVisible = guardado.alias ?: guardado.etiquetaEnCache,
+                )
+            }
         }
     }
 

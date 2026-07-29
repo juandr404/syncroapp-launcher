@@ -50,6 +50,13 @@ enum class EstiloIconos {
  * para que sobreviva a reordenamientos, reinstalaciones y perfiles de trabajo.
  *
  * @param alias nombre personalizado que reemplaza la etiqueta de la app (null = usar la original).
+ * @param etiquetaEnCache nombre de la app al momento de guardarla.
+ *
+ * [etiquetaEnCache] es una desnormalizacion deliberada. Sin ella, el inicio no puede mostrar
+ * un favorito hasta que termine de enumerarse TODA la lista de apps del sistema, que en un
+ * telefono con cientos de apps tarda varios segundos. Con ella, la pantalla de inicio se
+ * dibuja completa de inmediato desde el disco y la lista del sistema solo sirve, mas tarde,
+ * para refrescar nombres y descartar apps desinstaladas.
  */
 @Serializable
 data class FavoritoGuardado(
@@ -57,6 +64,7 @@ data class FavoritoGuardado(
     val clase: String,
     val serialUsuario: Long,
     val alias: String? = null,
+    val etiquetaEnCache: String = "",
 )
 
 /**
@@ -100,6 +108,11 @@ data class AjustesLauncher(
     val appsOcultas: Set<String> = emptySet(),
 
     // --- Busqueda ---
+    /**
+     * Reponer los gestos de navegacion cuando MIUI los apaga (solo equipos Xiaomi).
+     * Requiere conceder WRITE_SECURE_SETTINGS por adb una vez; ver GuardianDeGestos.
+     */
+    val protegerGestos: Boolean = false,
     val tecladoAutomatico: Boolean = true,
     /** Abrir la app automaticamente cuando la busqueda deja un unico resultado. */
     val abrirUnicoResultado: Boolean = false,

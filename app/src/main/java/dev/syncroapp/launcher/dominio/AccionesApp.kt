@@ -45,8 +45,28 @@ class AccionesApp @Inject constructor(
 }
 
 /** Convierte una app del sistema en la referencia persistible que se guarda en ajustes. */
-fun AplicacionInstalada.aFavorito(): FavoritoGuardado =
-    FavoritoGuardado(paquete = paquete, clase = clase, serialUsuario = serialUsuario)
+fun AplicacionInstalada.aFavorito(): FavoritoGuardado = FavoritoGuardado(
+    paquete = paquete,
+    clase = clase,
+    serialUsuario = serialUsuario,
+    // Se guarda el nombre para que el inicio pueda dibujarse sin esperar al sistema.
+    etiquetaEnCache = etiqueta,
+)
+
+/**
+ * Reconstruye una app lanzable a partir de un favorito guardado, sin consultar al sistema.
+ *
+ * Alcanza para dibujar la fila y para lanzarla (el lanzamiento solo necesita componente +
+ * usuario). Los campos de busqueda quedan vacios porque un favorito no se busca.
+ */
+fun FavoritoGuardado.aAppDeCache(): AplicacionInstalada = AplicacionInstalada(
+    paquete = paquete,
+    clase = clase,
+    serialUsuario = serialUsuario,
+    etiqueta = etiquetaEnCache,
+    etiquetaNormalizada = "",
+    esPerfilTrabajo = false,
+)
 
 /** true si este favorito guardado apunta a esta app instalada. */
 fun FavoritoGuardado.apuntaA(app: AplicacionInstalada): Boolean =

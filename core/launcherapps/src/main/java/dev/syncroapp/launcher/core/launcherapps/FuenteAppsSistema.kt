@@ -165,11 +165,21 @@ class FuenteAppsSistema @Inject constructor(
     }
 
     override fun iconoDe(app: AplicacionInstalada): Drawable? {
-        val actividad = actividadesPorClave[app.claveEstable] ?: return null
+        // Si la lista completa todavia no se ha leido, se consulta solo este componente.
+        // Es una unica llamada al sistema: permite que los favoritos del inicio muestren su
+        // icono de inmediato en vez de esperar a que se enumeren todas las apps instaladas.
+        val actividad = actividadesPorClave[app.claveEstable] ?: buscarActividad(app) ?: return null
         // getBadgedIcon(0) usa la densidad de la pantalla y agrega la insignia del perfil
         // de trabajo cuando corresponde, sin que tengamos que dibujarla nosotros.
         return runCatching { actividad.getBadgedIcon(0) }.getOrNull()
     }
+
+    private fun buscarActividad(app: AplicacionInstalada): LauncherActivityInfo? = runCatching {
+        launcherApps
+            .getActivityList(app.paquete, usuarioDe(app.serialUsuario))
+            .firstOrNull { it.componentName.className == app.clase }
+            ?.also { actividadesPorClave[app.claveEstable] = it }
+    }.getOrNull()
 
     /** Traduce el serial persistido al UserHandle vivo; si el perfil ya no existe, usa el personal. */
     private fun usuarioDe(serial: Long): UserHandle =

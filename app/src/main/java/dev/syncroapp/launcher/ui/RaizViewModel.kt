@@ -6,7 +6,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.syncroapp.launcher.core.data.ajustes.RepositorioAjustes
 import dev.syncroapp.launcher.core.data.modelo.AjustesLauncher
 import dev.syncroapp.launcher.core.launcherapps.GestorLauncherPredeterminado
+import dev.syncroapp.launcher.core.launcherapps.GuardianDeGestos
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +25,7 @@ import javax.inject.Inject
 class RaizViewModel @Inject constructor(
     repositorioAjustes: RepositorioAjustes,
     private val gestorPredeterminado: GestorLauncherPredeterminado,
+    private val guardianDeGestos: GuardianDeGestos,
 ) : ViewModel() {
 
     val ajustes: StateFlow<AjustesLauncher> = repositorioAjustes.ajustes
@@ -37,6 +40,13 @@ class RaizViewModel @Inject constructor(
 
     fun revisarSiEsPredeterminado() {
         _esPredeterminado.value = gestorPredeterminado.esPredeterminado()
+
+        // MIUI apaga los gestos de navegacion repetidamente cuando el launcher predeterminado
+        // es externo. Volver al inicio es justo el momento posterior a ese reinicio, asi que
+        // es aqui donde tiene sentido reponerlos.
+        viewModelScope.launch {
+            if (ajustes.value.protegerGestos) guardianDeGestos.restaurarSiHaceFalta()
+        }
     }
 
     private companion object {

@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        Permiso de sistema que NO se puede conceder desde la app ni desde un dialogo: solo por
+        adb, a proposito. Se declara para permitir una unica cosa: devolver los gestos de
+        navegacion cuando MIUI los apaga por tener un launcher externo como predeterminado.
+
+        Sin conceder, la app funciona igual; la proteccion de gestos queda deshabilitada y se
+        muestra el comando exacto en Ajustes. Ver GuardianDeGestos.
+    -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
 
     <!--
         Red de seguridad para listar aplicaciones.

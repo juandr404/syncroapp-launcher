@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,8 +33,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.syncroapp.launcher.core.data.modelo.Alineacion
 import dev.syncroapp.launcher.core.data.modelo.Densidad
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import dev.syncroapp.launcher.core.data.modelo.EstiloIconos
 import dev.syncroapp.launcher.core.data.modelo.EstiloReloj
+import dev.syncroapp.launcher.core.launcherapps.EstadoGestos
+import dev.syncroapp.launcher.core.launcherapps.GuardianDeGestos
 import dev.syncroapp.launcher.core.data.modelo.GrosorTrazo
 import dev.syncroapp.launcher.core.data.modelo.TamanoDia
 import dev.syncroapp.launcher.core.data.modelo.Tema
@@ -226,13 +231,26 @@ fun PantallaAjustes(
             }
         }
 
-        // --- Ayuda especifica de Xiaomi: MIUI apaga los gestos con launchers externos ---
-        if (esXiaomi()) {
+        // --- Gestos del sistema: MIUI los apaga con launchers externos ---
+        if (estado.estadoGestos != EstadoGestos.NO_APLICA) {
             item { TituloSeccion("Gestos del sistema") }
             item {
+                FilaInterruptor(
+                    titulo = "Mantener los gestos activos",
+                    detalle = when (estado.estadoGestos) {
+                        EstadoGestos.APAGADOS_SIN_PERMISO ->
+                            "Requiere un permiso que se concede por adb. Toque para ver como."
+                        EstadoGestos.ACTIVOS -> "Los gestos estan activos"
+                        else -> "MIUI los apago; se repondran al volver al inicio"
+                    },
+                    activo = ajustes.protegerGestos,
+                    onCambio = viewModel::cambiarProtegerGestos,
+                )
+            }
+            item {
                 FilaAccion(
-                    titulo = "Los gestos de navegacion se desactivaron?",
-                    detalle = "Es una restriccion de MIUI con launchers externos. Toque para ver como recuperarlos.",
+                    titulo = "Por que MIUI apaga los gestos",
+                    detalle = null,
                     onClick = { dialogoAbierto = DialogoOpciones.AYUDA_GESTOS },
                 )
             }
@@ -322,6 +340,7 @@ fun PantallaAjustes(
 
         DialogoOpciones.AYUDA_GESTOS -> {
             val colores = TemaLauncher.colores
+            val portapapeles = LocalClipboardManager.current
             AlertDialog(
                 onDismissRequest = { dialogoAbierto = null },
                 containerColor = colores.superficie,
@@ -329,15 +348,18 @@ fun PantallaAjustes(
                 text = {
                     Text(
                         "MIUI desactiva los gestos de pantalla completa cuando el launcher " +
-                            "predeterminado no es el suyo. No es una falla de esta app: le ocurre " +
-                            "a todos los launchers externos.\n\n" +
-                            "Como recuperarlos:\n\n" +
+                            "predeterminado no es el suyo, y los vuelve a desactivar cada cierto " +
+                            "tiempo aunque se reactiven a mano. No es una falla de esta app: le " +
+                            "ocurre a todos los launchers externos.\n\n" +
+                            "Esta app puede reponerlos sola, pero para escribir un ajuste del " +
+                            "sistema necesita un permiso que solo se concede por adb (por " +
+                            "seguridad no existe forma de pedirlo desde un dialogo).\n\n" +
                             "1. Active \"Depuracion USB (ajustes de seguridad)\" en Opciones de " +
-                            "desarrollador (requiere cuenta Mi y una SIM).\n\n" +
-                            "2. Desde un computador con adb ejecute:\n" +
-                            "adb shell settings put global force_fsg_nav_bar 1\n\n" +
-                            "3. Los gestos quedan activos incluso con este launcher. Para " +
-                            "revertirlo: el mismo comando con 0 al final.",
+                            "desarrollador.\n" +
+                            "2. Con el telefono conectado, ejecute una sola vez:\n\n" +
+                            GuardianDeGestos.COMANDO_PARA_OTORGAR + "\n\n" +
+                            "3. Active \"Mantener los gestos activos\".\n\n" +
+                            "Para revocarlo, reemplace 'grant' por 'revoke' en el mismo comando.",
                         color = colores.textoSecundario,
                     )
                 },
@@ -345,6 +367,11 @@ fun PantallaAjustes(
                     TextButton(onClick = { dialogoAbierto = null }) {
                         Text("Entendido", color = colores.textoPrimario)
                     }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        portapapeles.setText(AnnotatedString(GuardianDeGestos.COMANDO_PARA_OTORGAR))
+                    }) { Text("Copiar comando", color = colores.textoSecundario) }
                 },
             )
         }
@@ -380,12 +407,6 @@ fun PantallaAjustes(
 }
 
 private enum class DialogoOpciones { TEMA, ALINEACION, DENSIDAD, GROSOR, TAMANO_DIA, ICONOS, ESTILO_RELOJ, AYUDA_GESTOS }
-
-/** MIUI/HyperOS es el unico sistema que desactiva los gestos con launchers externos. */
-private fun esXiaomi(): Boolean =
-    android.os.Build.MANUFACTURER.equals("xiaomi", ignoreCase = true) ||
-        android.os.Build.BRAND.equals("redmi", ignoreCase = true) ||
-        android.os.Build.BRAND.equals("poco", ignoreCase = true)
 
 // --- Componentes de la pantalla de ajustes ---
 
@@ -442,13 +463,31 @@ private fun FilaInterruptor(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.padding(end = Espacio.m)) {
+        // weight(1f) es imprescindible: sin el, un texto largo empuja el interruptor fuera de
+        // la pantalla y el detalle se dibuja por debajo de el.
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = Espacio.m),
+        ) {
             Text(titulo, style = tipografia.cuerpo.copy(color = colores.textoPrimario))
             if (detalle != null) {
                 Text(detalle, style = tipografia.pista.copy(color = colores.textoTerciario))
             }
         }
-        Switch(checked = activo, onCheckedChange = onCambio)
+        Switch(
+            checked = activo,
+            onCheckedChange = onCambio,
+            colors = SwitchDefaults.colors(
+                // El launcher es monocromo por identidad: nada de color de acento.
+                checkedThumbColor = colores.fondo,
+                checkedTrackColor = colores.textoPrimario,
+                checkedBorderColor = colores.textoPrimario,
+                uncheckedThumbColor = colores.textoTerciario,
+                uncheckedTrackColor = colores.fondo,
+                uncheckedBorderColor = colores.textoTerciario,
+            ),
+        )
     }
 }
 
