@@ -24,6 +24,16 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.APP_CALENDAR" />
         </intent>
+        <!--
+            Relojes y calendarios de fabricantes que no declaran las acciones estandar.
+            MIUI, por ejemplo, no atiende SHOW_ALARMS: hay que abrir su app directamente.
+        -->
+        <package android:name="com.android.deskclock" />
+        <package android:name="com.google.android.deskclock" />
+        <package android:name="com.sec.android.app.clockpackage" />
+        <package android:name="com.android.calendar" />
+        <package android:name="com.google.android.calendar" />
+        <package android:name="com.xiaomi.calendar" />
     </queries>
 
     <!--
@@ -47,7 +57,6 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:stateNotNeeded="true"
-            android:excludeFromRecents="true"
             android:screenOrientation="nosensor"
             android:configChanges="keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|fontScale"
             android:windowSoftInputMode="adjustResize"

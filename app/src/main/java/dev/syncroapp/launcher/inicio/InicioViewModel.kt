@@ -9,6 +9,7 @@ import dev.syncroapp.launcher.core.data.modelo.AjustesLauncher
 import dev.syncroapp.launcher.core.data.reloj.RelojDelSistema
 import dev.syncroapp.launcher.core.launcherapps.AccionesSistema
 import dev.syncroapp.launcher.core.launcherapps.AplicacionInstalada
+import dev.syncroapp.launcher.core.launcherapps.CargadorIconos
 import dev.syncroapp.launcher.core.launcherapps.FuenteApps
 import dev.syncroapp.launcher.core.launcherapps.GestorLauncherPredeterminado
 import dev.syncroapp.launcher.dominio.AccionesApp
@@ -52,6 +53,8 @@ class InicioViewModel @Inject constructor(
     private val acciones: AccionesApp,
     private val accionesSistema: AccionesSistema,
     private val gestorPredeterminado: GestorLauncherPredeterminado,
+    /** Lo consume la UI para dibujar el icono de cada favorito. */
+    val cargadorIconos: CargadorIconos,
 ) : ViewModel() {
 
     private val esPredeterminado = MutableStateFlow(gestorPredeterminado.esPredeterminado())

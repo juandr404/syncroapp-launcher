@@ -23,6 +23,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.syncroapp.launcher.comun.DialogoRenombrar
 import dev.syncroapp.launcher.comun.MenuContextualApp
 import dev.syncroapp.launcher.comun.OpcionMenu
+import dev.syncroapp.launcher.comun.rememberIconoApp
+import dev.syncroapp.launcher.core.data.modelo.EstiloIconos
 import dev.syncroapp.launcher.core.ui.componentes.FilaApp
 import dev.syncroapp.launcher.core.ui.componentes.RelojGigante
 import dev.syncroapp.launcher.core.ui.gestos.gestosPantallaInicio
@@ -77,6 +79,7 @@ fun PantallaInicio(
             RelojGigante(
                 instante = estado.instante,
                 formato24h = estado.ajustes.formato24h,
+                estiloReloj = estado.ajustes.estiloReloj,
                 mostrarDiaGigante = estado.ajustes.mostrarDiaGigante,
                 tamanoDia = estado.ajustes.tamanoDia,
                 mostrarFecha = estado.ajustes.mostrarFecha,
@@ -101,6 +104,18 @@ fun PantallaInicio(
                     dimensiones = dimensiones,
                     esPerfilTrabajo = favorito.app.esPerfilTrabajo,
                     esFavorito = true,
+                    // En el inicio los iconos son siempre monocromos, independiente del estilo
+                    // del cajon: la estetica del inicio es de lineas sobre negro.
+                    icono = if (estado.ajustes.iconosEnFavoritos) {
+                        rememberIconoApp(
+                            app = favorito.app,
+                            estilo = EstiloIconos.MONOCROMO,
+                            tamano = dimensiones.tamanoIcono,
+                            cargador = viewModel.cargadorIconos,
+                        )
+                    } else {
+                        null
+                    },
                     onClick = { viewModel.abrirApp(favorito.app) },
                     onLongClick = { appDelMenu = favorito },
                 )

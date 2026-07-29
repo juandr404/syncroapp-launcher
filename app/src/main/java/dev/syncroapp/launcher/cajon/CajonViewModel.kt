@@ -7,6 +7,7 @@ import dev.syncroapp.launcher.core.data.ajustes.RepositorioAjustes
 import dev.syncroapp.launcher.core.data.busqueda.PuntuadorBusqueda
 import dev.syncroapp.launcher.core.data.modelo.AjustesLauncher
 import dev.syncroapp.launcher.core.launcherapps.AplicacionInstalada
+import dev.syncroapp.launcher.core.launcherapps.CargadorIconos
 import dev.syncroapp.launcher.core.launcherapps.FuenteApps
 import dev.syncroapp.launcher.dominio.AccionesApp
 import dev.syncroapp.launcher.dominio.apuntaA
@@ -33,6 +34,8 @@ class CajonViewModel @Inject constructor(
     private val fuenteApps: FuenteApps,
     repositorio: RepositorioAjustes,
     private val acciones: AccionesApp,
+    /** Lo consume la UI para dibujar el icono de cada fila. */
+    val cargadorIconos: CargadorIconos,
 ) : ViewModel() {
 
     private val consulta = MutableStateFlow("")

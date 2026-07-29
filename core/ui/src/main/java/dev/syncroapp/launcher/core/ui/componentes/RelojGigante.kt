@@ -28,28 +28,34 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.syncroapp.launcher.core.data.modelo.Alineacion
+import dev.syncroapp.launcher.core.data.modelo.EstiloReloj
 import dev.syncroapp.launcher.core.data.modelo.GrosorTrazo
 import dev.syncroapp.launcher.core.data.modelo.TamanoDia
 import dev.syncroapp.launcher.core.ui.tema.Espacio
 import dev.syncroapp.launcher.core.ui.tema.TemaLauncher
 import dev.syncroapp.launcher.core.ui.tema.anchoTrazoDe
 import dev.syncroapp.launcher.core.ui.tema.rangoTamanoDia
+import dev.syncroapp.launcher.core.ui.tema.tamanoHoraGrande
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.time.format.TextStyle as EstiloTextoJava
 
 /**
- * Bloque del reloj: dia de la semana en contorno gigante, con la hora y la fecha
- * flanqueandolo a la altura de su centro optico.
+ * Bloque del reloj del inicio, en dos estilos:
  *
- * El dia gigante es ornamento estructural: no tiene accion al tocarlo y para TalkBack es
- * decorativo, porque la misma informacion la dan la hora y la fecha, que si son legibles.
+ * - RELOJ_GRANDE: la hora en grande y fina, con el dia completo espaciado y la fecha con
+ *   ano debajo. Es el estilo por defecto.
+ * - DIA_GIGANTE: el dia abreviado en contorno gigante, con hora y fecha encima.
+ *
+ * En ambos, el elemento decorativo queda fuera de TalkBack porque su informacion ya la
+ * anuncian la hora y la fecha, que si son legibles.
  */
 @Composable
 fun RelojGigante(
     instante: LocalDateTime,
     formato24h: Boolean,
+    estiloReloj: EstiloReloj,
     mostrarDiaGigante: Boolean,
     tamanoDia: TamanoDia,
     mostrarFecha: Boolean,
@@ -71,6 +77,10 @@ fun RelojGigante(
             .uppercase(local)
     }
 
+    val textoDiaCompleto = remember(instante.dayOfWeek, local) {
+        instante.dayOfWeek.getDisplayName(EstiloTextoJava.FULL, local).uppercase(local)
+    }
+
     val textoHora = remember(instante.hour, instante.minute, formato24h) {
         val patron = if (formato24h) "HH:mm" else "h:mm a"
         instante.format(DateTimeFormatter.ofPattern(patron, Locale.getDefault()))
@@ -78,6 +88,12 @@ fun RelojGigante(
 
     val textoFecha = remember(instante.dayOfMonth, instante.month, local) {
         instante.format(DateTimeFormatter.ofPattern("d MMM", local))
+            .replace(".", "")
+            .uppercase(local)
+    }
+
+    val textoFechaLarga = remember(instante.toLocalDate(), local) {
+        instante.format(DateTimeFormatter.ofPattern("d MMM yyyy", local))
             .replace(".", "")
             .uppercase(local)
     }
@@ -94,7 +110,46 @@ fun RelojGigante(
             Alineacion.DERECHA -> Alignment.End
         },
     ) {
-        if (mostrarDiaGigante) {
+        if (estiloReloj == EstiloReloj.RELOJ_GRANDE) {
+            // --- Estilo por defecto: la hora manda ---
+            Text(
+                text = textoHora,
+                style = tipografia.horaGrande.copy(
+                    fontSize = tamanoHoraGrande(tamanoDia),
+                    color = colores.textoPrimario,
+                ),
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .clickable(onClickLabel = "Abrir reloj", onClick = onTocarHora)
+                    .semantics { contentDescription = "Hora $textoHora" },
+            )
+
+            if (mostrarDiaGigante) {
+                Text(
+                    text = textoDiaCompleto,
+                    style = tipografia.diaSemana.copy(color = colores.textoPrimario),
+                    maxLines = 1,
+                    modifier = Modifier
+                        .padding(top = Espacio.s)
+                        // Decorativo para TalkBack: la fecha ya anuncia el dia completo.
+                        .clearAndSetSemantics { },
+                )
+            }
+
+            if (mostrarFecha) {
+                Text(
+                    text = textoFechaLarga,
+                    style = tipografia.fechaLarga.copy(color = colores.textoTerciario),
+                    maxLines = 1,
+                    modifier = Modifier
+                        .padding(top = Espacio.xs)
+                        .clickable(onClickLabel = "Abrir calendario", onClick = onTocarFecha)
+                        .padding(vertical = 6.dp)
+                        .semantics { contentDescription = descripcionFecha },
+                )
+            }
+        } else if (mostrarDiaGigante) {
             // Hora y fecha en linea propia, alineadas a los extremos, ENCIMA del dia.
             //
             // El dia auto-escala hasta llenar el ancho, asi que siempre queda a sangre; superponer

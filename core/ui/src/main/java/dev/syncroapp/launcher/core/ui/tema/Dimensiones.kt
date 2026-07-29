@@ -30,13 +30,14 @@ object Espacio {
 data class DimensionesLista(
     val altoFila: Dp,
     val tamanoTexto: TextUnit,
+    val tamanoIcono: Dp,
     val separacionIcono: Dp,
 )
 
 fun dimensionesDe(densidad: Densidad): DimensionesLista = when (densidad) {
-    Densidad.COMPACTA -> DimensionesLista(44.dp, 19.sp, 12.dp)
-    Densidad.MEDIA -> DimensionesLista(52.dp, 22.sp, 16.dp)
-    Densidad.AMPLIA -> DimensionesLista(64.dp, 25.sp, 16.dp)
+    Densidad.COMPACTA -> DimensionesLista(44.dp, 19.sp, 22.dp, 14.dp)
+    Densidad.MEDIA -> DimensionesLista(52.dp, 22.sp, 26.dp, 16.dp)
+    Densidad.AMPLIA -> DimensionesLista(64.dp, 25.sp, 30.dp, 18.dp)
 }
 
 /**
@@ -66,6 +67,13 @@ fun anchoTrazoDe(grosor: GrosorTrazo, tamano: TamanoDia): Dp = when (tamano) {
     TamanoDia.PEQUENO -> anchoTrazoDe(grosor) * 0.55f
     TamanoDia.MEDIANO -> anchoTrazoDe(grosor) * 0.8f
     TamanoDia.GRANDE -> anchoTrazoDe(grosor)
+}
+
+/** Tamano de la hora cuando es la protagonista del inicio (estilo "reloj grande"). */
+fun tamanoHoraGrande(tamano: TamanoDia): TextUnit = when (tamano) {
+    TamanoDia.PEQUENO -> 64.sp
+    TamanoDia.MEDIANO -> 88.sp
+    TamanoDia.GRANDE -> 108.sp
 }
 
 /** Alto minimo de un objetivo tactil segun las guias de accesibilidad. */

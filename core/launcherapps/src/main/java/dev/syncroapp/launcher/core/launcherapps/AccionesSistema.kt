@@ -40,42 +40,75 @@ class AccionesSistema @Inject constructor(
         false
     }
 
-    /** Abre la app de reloj/alarmas del sistema (toque sobre la hora). */
-    fun abrirReloj(): Boolean = abrirElPrimeroQueFuncione(
+    /**
+     * Abre la app de reloj/alarmas (toque sobre la hora).
+     *
+     * La accion estandar de alarmas no siempre esta declarada: MIUI, por ejemplo, no la atiende.
+     * Por eso, si falla, se abre directamente la app de reloj del fabricante.
+     */
+    fun abrirReloj(): Boolean = abrirLoPrimeroQueFuncione(
         "el reloj",
-        Intent(AlarmClock.ACTION_SHOW_ALARMS),
+        intents = listOf(Intent(AlarmClock.ACTION_SHOW_ALARMS)),
+        paquetesDeRespaldo = PAQUETES_RELOJ,
     )
 
     /** Abre el calendario en el dia de hoy (toque sobre la fecha). */
-    fun abrirCalendario(): Boolean = abrirElPrimeroQueFuncione(
+    fun abrirCalendario(): Boolean = abrirLoPrimeroQueFuncione(
         "el calendario",
-        Intent(Intent.ACTION_VIEW)
-            .setData(CalendarContract.CONTENT_URI.buildUpon().appendPath("time").build()),
-        Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR),
+        intents = listOf(
+            Intent(Intent.ACTION_VIEW)
+                .setData(CalendarContract.CONTENT_URI.buildUpon().appendPath("time").build()),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR),
+        ),
+        paquetesDeRespaldo = PAQUETES_CALENDARIO,
     )
 
     /**
-     * Prueba los intents en orden y se queda con el primero que alguna app atienda.
+     * Prueba las acciones estandar y, si ninguna funciona, abre por nombre de paquete las apps
+     * conocidas de cada fabricante.
      *
-     * Si ninguno funciona se lo dice al usuario en vez de no hacer nada: un toque que no
-     * produce ninguna reaccion se siente como una app rota.
+     * Si aun asi no hay nada, se lo dice al usuario: un toque que no produce ninguna reaccion
+     * se siente como una app rota.
      */
-    private fun abrirElPrimeroQueFuncione(queCosa: String, vararg intents: Intent): Boolean {
+    private fun abrirLoPrimeroQueFuncione(
+        queCosa: String,
+        intents: List<Intent>,
+        paquetesDeRespaldo: List<String>,
+    ): Boolean {
         for (intent in intents) {
-            val exito = runCatching {
-                contexto.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                true
-            }.getOrElse {
-                Log.d(TAG, "Nadie atiende ${intent.action}", it)
-                false
-            }
-            if (exito) return true
+            if (intentar(intent)) return true
         }
+
+        for (paquete in paquetesDeRespaldo) {
+            val intent = contexto.packageManager.getLaunchIntentForPackage(paquete) ?: continue
+            if (intentar(intent)) return true
+        }
+
         Toast.makeText(contexto, "No se encontro una app para $queCosa.", Toast.LENGTH_SHORT).show()
         return false
     }
 
+    private fun intentar(intent: Intent): Boolean = runCatching {
+        contexto.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        true
+    }.getOrElse {
+        Log.d(TAG, "Nadie atiende ${intent.action}", it)
+        false
+    }
+
     private companion object {
         const val TAG = "AccionesSistema"
+
+        val PAQUETES_RELOJ = listOf(
+            "com.android.deskclock",          // MIUI y AOSP
+            "com.google.android.deskclock",   // Reloj de Google
+            "com.sec.android.app.clockpackage", // Samsung
+        )
+
+        val PAQUETES_CALENDARIO = listOf(
+            "com.android.calendar",
+            "com.google.android.calendar",
+            "com.xiaomi.calendar",
+        )
     }
 }

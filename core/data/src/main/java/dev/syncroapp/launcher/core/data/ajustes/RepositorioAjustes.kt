@@ -2,9 +2,11 @@ package dev.syncroapp.launcher.core.data.ajustes
 
 import androidx.datastore.core.DataStore
 import dev.syncroapp.launcher.core.data.modelo.AjustesLauncher
+import dev.syncroapp.launcher.core.data.modelo.EstiloIconos
 import dev.syncroapp.launcher.core.data.modelo.FavoritoGuardado
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,15 +22,35 @@ class RepositorioAjustes @Inject constructor(
     private val dataStore: DataStore<AjustesLauncher>,
 ) {
 
-    /** Configuracion actual. Ante un error de lectura de disco emite los defaults. */
+    /** Configuracion actual, ya migrada. Ante un error de lectura de disco emite los defaults. */
     val ajustes: Flow<AjustesLauncher> = dataStore.data
+        .map(::migrar)
         .catch { error ->
             if (error is IOException) emit(AjustesLauncher()) else throw error
         }
 
-    /** Actualiza la configuracion de forma atomica. */
+    /** Actualiza la configuracion de forma atomica, migrando antes de transformar. */
     suspend fun actualizar(transformacion: (AjustesLauncher) -> AjustesLauncher) {
-        dataStore.updateData(transformacion)
+        dataStore.updateData { transformacion(migrar(it)) }
+    }
+
+    /**
+     * Migraciones de esquema. Idempotente: un archivo ya migrado pasa sin cambios.
+     *
+     * v0 -> v1: "sin iconos" en el cajon era el valor por defecto, no una eleccion del usuario
+     * (la opcion ni siquiera existia en Ajustes). El nuevo defecto son los iconos originales,
+     * asi que los archivos viejos se actualizan para que el cambio les llegue.
+     */
+    private fun migrar(guardado: AjustesLauncher): AjustesLauncher {
+        if (guardado.versionAjustes >= VERSION_ACTUAL) return guardado
+        return guardado.copy(
+            estiloIconos = if (guardado.estiloIconos == EstiloIconos.NINGUNO) {
+                EstiloIconos.ORIGINALES
+            } else {
+                guardado.estiloIconos
+            },
+            versionAjustes = VERSION_ACTUAL,
+        )
     }
 
     // --- Favoritos ---
@@ -70,6 +92,11 @@ class RepositorioAjustes @Inject constructor(
         actual.copy(
             appsOcultas = if (claveEstable in ocultas) ocultas - claveEstable else ocultas + claveEstable,
         )
+    }
+
+    private companion object {
+        /** Subir en uno cada vez que se agregue un paso a [migrar]. */
+        const val VERSION_ACTUAL = 1
     }
 }
 

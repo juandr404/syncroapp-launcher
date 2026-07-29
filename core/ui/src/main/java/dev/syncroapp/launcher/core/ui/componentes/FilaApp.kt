@@ -5,11 +5,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -17,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +52,8 @@ fun FilaApp(
     modifier: Modifier = Modifier,
     esPerfilTrabajo: Boolean = false,
     esFavorito: Boolean = false,
+    /** Icono ya rasterizado; null = fila de solo texto. */
+    icono: ImageBitmap? = null,
 ) {
     val colores = TemaLauncher.colores
     val tipografia = TemaLauncher.tipografia
@@ -81,6 +88,19 @@ fun FilaApp(
             Alineacion.DERECHA -> Arrangement.End
         },
     ) {
+        // Con alineacion a la derecha el icono va del lado de la alineacion, para que el
+        // texto siga formando una columna limpia contra el borde.
+        if (icono != null && alineacion != Alineacion.DERECHA) {
+            Image(
+                bitmap = icono,
+                contentDescription = null, // la fila entera ya se anuncia como un solo elemento
+                modifier = Modifier
+                    .size(dimensiones.tamanoIcono)
+                    .padding(end = 0.dp),
+            )
+            Spacer(modifier = Modifier.width(dimensiones.separacionIcono))
+        }
+
         Text(
             text = etiqueta,
             style = tipografia.filaApp.copy(
@@ -90,5 +110,14 @@ fun FilaApp(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+
+        if (icono != null && alineacion == Alineacion.DERECHA) {
+            Spacer(modifier = Modifier.width(dimensiones.separacionIcono))
+            Image(
+                bitmap = icono,
+                contentDescription = null,
+                modifier = Modifier.size(dimensiones.tamanoIcono),
+            )
+        }
     }
 }

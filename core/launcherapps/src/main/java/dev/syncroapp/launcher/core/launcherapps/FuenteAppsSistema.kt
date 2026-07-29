@@ -3,7 +3,9 @@ package dev.syncroapp.launcher.core.launcherapps
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -52,6 +54,14 @@ class FuenteAppsSistema @Inject constructor(
     override val cargaInicialCompletada: StateFlow<Boolean> = _cargaInicialCompletada.asStateFlow()
 
     /**
+     * Handles de actividad indexados por clave estable, para poder pedir el icono despues.
+     *
+     * Se guardan los handles y no los Drawable: un LauncherActivityInfo pesa poco, mientras que
+     * doscientos iconos rasterizados serian decenas de MB retenidos de forma permanente.
+     */
+    private val actividadesPorClave = java.util.concurrent.ConcurrentHashMap<String, LauncherActivityInfo>()
+
+    /**
      * El callback se registra una sola vez y vive tanto como el proceso.
      * Cualquier evento invalida la cache y re-emite: la UI se actualiza sola.
      */
@@ -97,6 +107,7 @@ class FuenteAppsSistema @Inject constructor(
      */
     private fun leerAppsInstaladas(): List<AplicacionInstalada> {
         val perfilPersonal = Process.myUserHandle()
+        actividadesPorClave.clear()
 
         return userManager.userProfiles.flatMap { perfil ->
             val serial = userManager.getSerialNumberForUser(perfil)
@@ -114,7 +125,7 @@ class FuenteAppsSistema @Inject constructor(
                         etiqueta = etiqueta,
                         etiquetaNormalizada = PuntuadorBusqueda.normalizar(etiqueta),
                         esPerfilTrabajo = esTrabajo,
-                    )
+                    ).also { app -> actividadesPorClave[app.claveEstable] = actividad }
                 }
         }.sortedBy { it.etiquetaNormalizada }
     }
@@ -151,6 +162,13 @@ class FuenteAppsSistema @Inject constructor(
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             contexto.startActivity(intent)
         }.onFailure { Log.w(TAG, "No se pudo desinstalar ${app.paquete}", it) }
+    }
+
+    override fun iconoDe(app: AplicacionInstalada): Drawable? {
+        val actividad = actividadesPorClave[app.claveEstable] ?: return null
+        // getBadgedIcon(0) usa la densidad de la pantalla y agrega la insignia del perfil
+        // de trabajo cuando corresponde, sin que tengamos que dibujarla nosotros.
+        return runCatching { actividad.getBadgedIcon(0) }.getOrNull()
     }
 
     /** Traduce el serial persistido al UserHandle vivo; si el perfil ya no existe, usa el personal. */

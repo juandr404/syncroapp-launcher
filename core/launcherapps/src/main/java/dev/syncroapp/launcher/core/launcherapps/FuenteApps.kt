@@ -35,4 +35,10 @@ interface FuenteApps {
 
     /** Fuerza una recarga completa de la lista. */
     fun refrescar()
+
+    /**
+     * Icono de la app, ya con la insignia de perfil de trabajo si corresponde.
+     * Devuelve null si la app desaparecio entre que se dibujo la lista y se pidio el icono.
+     */
+    fun iconoDe(app: AplicacionInstalada): android.graphics.drawable.Drawable?
 }

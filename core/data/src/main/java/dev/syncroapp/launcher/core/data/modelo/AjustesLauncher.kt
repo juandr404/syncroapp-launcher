@@ -24,13 +24,25 @@ enum class GrosorTrazo { FINO, MEDIO, GRUESO }
  */
 enum class TamanoDia { PEQUENO, MEDIANO, GRANDE }
 
+/** Que elemento protagoniza el bloque del reloj. */
+enum class EstiloReloj {
+    /** La hora en grande, con el dia completo y la fecha debajo. */
+    RELOJ_GRANDE,
+
+    /** El dia de la semana abreviado, en contorno gigante. */
+    DIA_GIGANTE,
+}
+
 /** Estilo de los iconos de la lista de apps. */
 enum class EstiloIconos {
-    /** Sin iconos: la lista es solo texto. Default del producto. */
+    /** Sin iconos: la lista es solo texto. */
     NINGUNO,
 
-    /** Capa monochrome del icono adaptativo (Android 13+), tintada con el color de texto. */
+    /** Monocromo: capa del icono tematizado (Android 13+) o el icono desaturado. */
     MONOCROMO,
+
+    /** El icono original de cada app, a color. Es el que permite reconocerlas de un vistazo. */
+    ORIGINALES,
 }
 
 /**
@@ -65,6 +77,12 @@ data class AjustesLauncher(
 
     // --- Reloj ---
     val formato24h: Boolean = true,
+    /**
+     * Version del esquema de configuracion guardado. Los archivos viejos no traen el campo
+     * (leen 0) y pasan por la migracion de [dev.syncroapp.launcher.core.data.ajustes.RepositorioAjustes].
+     */
+    val versionAjustes: Int = 0,
+    val estiloReloj: EstiloReloj = EstiloReloj.RELOJ_GRANDE,
     val mostrarDiaGigante: Boolean = true,
     val tamanoDia: TamanoDia = TamanoDia.MEDIANO,
     val mostrarFecha: Boolean = true,
@@ -74,7 +92,10 @@ data class AjustesLauncher(
 
     // --- Apps ---
     val favoritos: List<FavoritoGuardado> = emptyList(),
-    val estiloIconos: EstiloIconos = EstiloIconos.NINGUNO,
+    /** Iconos en el cajon: sirven para reconocer apps cuyo nombre uno no recuerda. */
+    val estiloIconos: EstiloIconos = EstiloIconos.ORIGINALES,
+    /** Iconos de linea junto a los favoritos del inicio, como en el diseno de referencia. */
+    val iconosEnFavoritos: Boolean = true,
     /** Claves estables ("paquete/clase#serial") de apps ocultas del cajon y la busqueda. */
     val appsOcultas: Set<String> = emptySet(),
 

@@ -33,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.syncroapp.launcher.comun.MenuContextualApp
 import dev.syncroapp.launcher.comun.OpcionMenu
+import dev.syncroapp.launcher.comun.rememberIconoApp
 import dev.syncroapp.launcher.core.launcherapps.AplicacionInstalada
 import dev.syncroapp.launcher.core.ui.componentes.EncabezadoPantalla
 import dev.syncroapp.launcher.core.ui.componentes.FilaApp
@@ -127,6 +128,12 @@ fun PantallaCajon(
                     dimensiones = dimensiones,
                     esPerfilTrabajo = app.esPerfilTrabajo,
                     esFavorito = app.claveEstable in estado.clavesFavoritas,
+                    icono = rememberIconoApp(
+                        app = app,
+                        estilo = estado.ajustes.estiloIconos,
+                        tamano = dimensiones.tamanoIcono,
+                        cargador = viewModel.cargadorIconos,
+                    ),
                     onClick = {
                         viewModel.abrirApp(app)
                         viewModel.limpiarBusqueda()

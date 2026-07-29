@@ -27,6 +27,32 @@ data class TipografiaLauncher(
         fontSize = 34.sp,
     )
 
+    /**
+     * La hora como protagonista del inicio (estilo "reloj grande").
+     * Peso fino: a este tamano un trazo delgado se ve elegante y no oscurece la pantalla.
+     */
+    val horaGrande = TextStyle(
+        fontFamily = familiaDisplay,
+        fontWeight = FontWeight.Light,
+        letterSpacing = (-2).sp, // los dos puntos y los digitos respiran menos a este tamano
+    )
+
+    /** Dia de la semana completo bajo la hora grande: MIERCOLES con aire entre letras. */
+    val diaSemana = TextStyle(
+        fontFamily = familiaDisplay,
+        fontWeight = FontWeight.Normal,
+        fontSize = 26.sp,
+        letterSpacing = 7.sp, // ~0.27em, el espaciado amplio del diseno de referencia
+    )
+
+    /** Fecha con ano bajo el dia: 10 DIC 2026. */
+    val fechaLarga = TextStyle(
+        fontFamily = familiaDisplay,
+        fontWeight = FontWeight.Normal,
+        fontSize = 15.sp,
+        letterSpacing = 4.sp,
+    )
+
     val fecha = TextStyle(
         fontFamily = familiaDisplay,
         fontWeight = FontWeight.Normal,

@@ -32,6 +32,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.syncroapp.launcher.core.data.modelo.Alineacion
 import dev.syncroapp.launcher.core.data.modelo.Densidad
+import dev.syncroapp.launcher.core.data.modelo.EstiloIconos
+import dev.syncroapp.launcher.core.data.modelo.EstiloReloj
 import dev.syncroapp.launcher.core.data.modelo.GrosorTrazo
 import dev.syncroapp.launcher.core.data.modelo.TamanoDia
 import dev.syncroapp.launcher.core.data.modelo.Tema
@@ -136,18 +138,21 @@ fun PantallaAjustes(
             )
         }
         item {
+            FilaOpcion("Estilo del reloj", etiquetaEstiloReloj(ajustes.estiloReloj)) {
+                dialogoAbierto = DialogoOpciones.ESTILO_RELOJ
+            }
+        }
+        item {
+            FilaOpcion("Tamano", etiquetaTamanoDia(ajustes.tamanoDia)) {
+                dialogoAbierto = DialogoOpciones.TAMANO_DIA
+            }
+        }
+        item {
             FilaInterruptor(
                 titulo = "Mostrar el dia de la semana",
                 activo = ajustes.mostrarDiaGigante,
                 onCambio = viewModel::cambiarMostrarDiaGigante,
             )
-        }
-        if (ajustes.mostrarDiaGigante) {
-            item {
-                FilaOpcion("Tamano del dia", etiquetaTamanoDia(ajustes.tamanoDia)) {
-                    dialogoAbierto = DialogoOpciones.TAMANO_DIA
-                }
-            }
         }
         item {
             FilaInterruptor(
@@ -156,18 +161,39 @@ fun PantallaAjustes(
                 onCambio = viewModel::cambiarMostrarFecha,
             )
         }
-        item {
-            FilaOpcion("Grosor del trazo", etiquetaGrosor(ajustes.grosorTrazo)) {
-                dialogoAbierto = DialogoOpciones.GROSOR
+        // El grosor solo aplica al contorno del dia gigante.
+        if (ajustes.estiloReloj == EstiloReloj.DIA_GIGANTE) {
+            item {
+                FilaOpcion("Grosor del trazo", etiquetaGrosor(ajustes.grosorTrazo)) {
+                    dialogoAbierto = DialogoOpciones.GROSOR
+                }
             }
         }
         item {
             FilaInterruptor(
                 titulo = "Dia en ingles",
-                detalle = "WED en vez de MIE",
+                detalle = "WEDNESDAY en vez de MIERCOLES",
                 activo = ajustes.diaEnIngles,
                 onCambio = viewModel::cambiarDiaEnIngles,
             )
+        }
+
+        // --- Aplicaciones ---
+        item { TituloSeccion("Aplicaciones") }
+        item {
+            FilaOpcion("Iconos en el cajon", etiquetaEstiloIconos(ajustes.estiloIconos)) {
+                dialogoAbierto = DialogoOpciones.ICONOS
+            }
+        }
+        if (ajustes.estiloIconos != EstiloIconos.NINGUNO) {
+            item {
+                FilaInterruptor(
+                    titulo = "Iconos tambien en favoritos",
+                    detalle = "En el inicio son pocos y elegidos a mano; el texto solo suele bastar",
+                    activo = ajustes.iconosEnFavoritos,
+                    onCambio = viewModel::cambiarIconosEnFavoritos,
+                )
+            }
         }
 
         // --- Busqueda ---
@@ -196,6 +222,18 @@ fun PantallaAjustes(
                     titulo = app.etiqueta,
                     detalle = "Toque para volver a mostrarla",
                     onClick = { viewModel.mostrarDeNuevo(app) },
+                )
+            }
+        }
+
+        // --- Ayuda especifica de Xiaomi: MIUI apaga los gestos con launchers externos ---
+        if (esXiaomi()) {
+            item { TituloSeccion("Gestos del sistema") }
+            item {
+                FilaAccion(
+                    titulo = "Los gestos de navegacion se desactivaron?",
+                    detalle = "Es una restriccion de MIUI con launchers externos. Toque para ver como recuperarlos.",
+                    onClick = { dialogoAbierto = DialogoOpciones.AYUDA_GESTOS },
                 )
             }
         }
@@ -258,6 +296,22 @@ fun PantallaAjustes(
             onCerrar = { dialogoAbierto = null },
         )
 
+        DialogoOpciones.ESTILO_RELOJ -> DialogoSeleccion(
+            titulo = "Estilo del reloj",
+            opciones = EstiloReloj.entries.map { it to etiquetaEstiloReloj(it) },
+            seleccionActual = ajustes.estiloReloj,
+            onSeleccionar = viewModel::cambiarEstiloReloj,
+            onCerrar = { dialogoAbierto = null },
+        )
+
+        DialogoOpciones.ICONOS -> DialogoSeleccion(
+            titulo = "Iconos en el cajon",
+            opciones = EstiloIconos.entries.map { it to etiquetaEstiloIconos(it) },
+            seleccionActual = ajustes.estiloIconos,
+            onSeleccionar = viewModel::cambiarEstiloIconos,
+            onCerrar = { dialogoAbierto = null },
+        )
+
         DialogoOpciones.TAMANO_DIA -> DialogoSeleccion(
             titulo = "Tamano del dia",
             opciones = TamanoDia.entries.map { it to etiquetaTamanoDia(it) },
@@ -265,6 +319,35 @@ fun PantallaAjustes(
             onSeleccionar = viewModel::cambiarTamanoDia,
             onCerrar = { dialogoAbierto = null },
         )
+
+        DialogoOpciones.AYUDA_GESTOS -> {
+            val colores = TemaLauncher.colores
+            AlertDialog(
+                onDismissRequest = { dialogoAbierto = null },
+                containerColor = colores.superficie,
+                title = { Text("Gestos en Xiaomi", color = colores.textoPrimario) },
+                text = {
+                    Text(
+                        "MIUI desactiva los gestos de pantalla completa cuando el launcher " +
+                            "predeterminado no es el suyo. No es una falla de esta app: le ocurre " +
+                            "a todos los launchers externos.\n\n" +
+                            "Como recuperarlos:\n\n" +
+                            "1. Active \"Depuracion USB (ajustes de seguridad)\" en Opciones de " +
+                            "desarrollador (requiere cuenta Mi y una SIM).\n\n" +
+                            "2. Desde un computador con adb ejecute:\n" +
+                            "adb shell settings put global force_fsg_nav_bar 1\n\n" +
+                            "3. Los gestos quedan activos incluso con este launcher. Para " +
+                            "revertirlo: el mismo comando con 0 al final.",
+                        color = colores.textoSecundario,
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { dialogoAbierto = null }) {
+                        Text("Entendido", color = colores.textoPrimario)
+                    }
+                },
+            )
+        }
 
         null -> Unit
     }
@@ -296,7 +379,13 @@ fun PantallaAjustes(
     }
 }
 
-private enum class DialogoOpciones { TEMA, ALINEACION, DENSIDAD, GROSOR, TAMANO_DIA }
+private enum class DialogoOpciones { TEMA, ALINEACION, DENSIDAD, GROSOR, TAMANO_DIA, ICONOS, ESTILO_RELOJ, AYUDA_GESTOS }
+
+/** MIUI/HyperOS es el unico sistema que desactiva los gestos con launchers externos. */
+private fun esXiaomi(): Boolean =
+    android.os.Build.MANUFACTURER.equals("xiaomi", ignoreCase = true) ||
+        android.os.Build.BRAND.equals("redmi", ignoreCase = true) ||
+        android.os.Build.BRAND.equals("poco", ignoreCase = true)
 
 // --- Componentes de la pantalla de ajustes ---
 
@@ -451,6 +540,17 @@ private fun etiquetaGrosor(grosor: GrosorTrazo): String = when (grosor) {
     GrosorTrazo.FINO -> "Fino"
     GrosorTrazo.MEDIO -> "Medio"
     GrosorTrazo.GRUESO -> "Grueso"
+}
+
+private fun etiquetaEstiloIconos(estilo: EstiloIconos): String = when (estilo) {
+    EstiloIconos.NINGUNO -> "Sin iconos"
+    EstiloIconos.MONOCROMO -> "Monocromos"
+    EstiloIconos.ORIGINALES -> "Originales"
+}
+
+private fun etiquetaEstiloReloj(estilo: EstiloReloj): String = when (estilo) {
+    EstiloReloj.RELOJ_GRANDE -> "Reloj grande"
+    EstiloReloj.DIA_GIGANTE -> "Dia en contorno"
 }
 
 private fun etiquetaTamanoDia(tamano: TamanoDia): String = when (tamano) {
