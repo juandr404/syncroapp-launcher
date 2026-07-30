@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.syncroapp.launcher.core.data.ajustes.RepositorioAjustes
 import dev.syncroapp.launcher.core.data.modelo.AjustesLauncher
 import dev.syncroapp.launcher.core.launcherapps.GestorLauncherPredeterminado
+import dev.syncroapp.launcher.core.launcherapps.GuardianDeGestos
+import dev.syncroapp.launcher.gestos.GestorGestosPropios
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +25,8 @@ import javax.inject.Inject
 class RaizViewModel @Inject constructor(
     repositorioAjustes: RepositorioAjustes,
     private val gestorPredeterminado: GestorLauncherPredeterminado,
+    private val guardianDeGestos: GuardianDeGestos,
+    private val gestosPropios: GestorGestosPropios,
 ) : ViewModel() {
 
     val ajustes: StateFlow<AjustesLauncher> = repositorioAjustes.ajustes
@@ -37,6 +41,21 @@ class RaizViewModel @Inject constructor(
 
     fun revisarSiEsPredeterminado() {
         _esPredeterminado.value = gestorPredeterminado.esPredeterminado()
+        devolverLaBarraSiNoHayGestos()
+    }
+
+    /**
+     * Red de seguridad contra quedarse sin navegacion.
+     *
+     * Si la barra esta oculta pero el servicio de gestos propios ya no esta activo (el usuario
+     * lo apago, o el sistema lo mato), el telefono se queda sin botones y sin gestos. Aqui se
+     * devuelve la barra sola, sin preguntar: recuperar la navegacion no es una decision que
+     * valga la pena consultar.
+     */
+    private fun devolverLaBarraSiNoHayGestos() {
+        if (guardianDeGestos.barraOculta() && !gestosPropios.estaActivo()) {
+            guardianDeGestos.ocultarBarra(false)
+        }
     }
 
     private companion object {

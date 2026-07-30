@@ -35,6 +35,10 @@ data class EstadoAjustes(
     val estadoGestos: EstadoGestos = EstadoGestos.NO_APLICA,
     /** true si el servicio de gestos propios esta habilitado en accesibilidad. */
     val gestosPropiosActivos: Boolean = false,
+    /** true si la barra de navegacion del sistema esta oculta. */
+    val barraOculta: Boolean = false,
+    /** Sin el permiso de adb no se puede ocultar la barra desde la app. */
+    val puedeOcultarBarra: Boolean = false,
 )
 
 @HiltViewModel
@@ -56,6 +60,8 @@ class AjustesViewModel @Inject constructor(
             esPredeterminado = gestorPredeterminado.esPredeterminado(),
             estadoGestos = guardianDeGestos.estado(),
             gestosPropiosActivos = gestosPropios.estaActivo(),
+            barraOculta = guardianDeGestos.barraOculta(),
+            puedeOcultarBarra = guardianDeGestos.tienePermiso(),
         )
     }.stateIn(
         scope = viewModelScope,
@@ -93,6 +99,17 @@ class AjustesViewModel @Inject constructor(
 
     /** Lleva a la pantalla del sistema donde se activa el servicio de gestos propios. */
     fun intentGestosPropios(): Intent = gestosPropios.intentAjustesAccesibilidad()
+
+    /**
+     * Oculta o muestra la barra de navegacion.
+     *
+     * Se niega a ocultarla si el servicio de gestos propios no esta activo: sin el, el telefono
+     * queda sin botones Y sin gestos. Mostrarla siempre se permite.
+     */
+    fun cambiarBarraOculta(ocultar: Boolean) {
+        if (ocultar && !gestosPropios.estaActivo()) return
+        guardianDeGestos.ocultarBarra(ocultar)
+    }
 
     // --- Busqueda ---
     fun cambiarTecladoAutomatico(valor: Boolean) = actualizar { it.copy(tecladoAutomatico = valor) }

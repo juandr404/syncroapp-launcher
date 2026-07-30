@@ -261,6 +261,27 @@ fun PantallaAjustes(
                     onClick = { contexto.startActivity(viewModel.intentGestosPropios()) },
                 )
             }
+            // Ocultar la barra solo se ofrece cuando ya hay gestos propios que la reemplacen.
+            // Ofrecerlo antes seria ofrecer quedarse sin ninguna forma de navegar.
+            if (estado.gestosPropiosActivos && estado.puedeOcultarBarra) {
+                item {
+                    FilaInterruptor(
+                        titulo = "Ocultar la barra de navegacion",
+                        detalle = "Recupera el espacio de los botones. Se navega con los gestos " +
+                            "de borde. Si desactiva los gestos, la barra vuelve sola.",
+                        activo = estado.barraOculta,
+                        onCambio = viewModel::cambiarBarraOculta,
+                    )
+                }
+            } else if (estado.barraOculta) {
+                item {
+                    FilaAccion(
+                        titulo = "Mostrar la barra de navegacion",
+                        detalle = "La barra esta oculta y no hay gestos propios activos.",
+                        onClick = { viewModel.cambiarBarraOculta(false) },
+                    )
+                }
+            }
             item {
                 FilaAccion(
                     titulo = "Por que los gestos no funcionan en Xiaomi",

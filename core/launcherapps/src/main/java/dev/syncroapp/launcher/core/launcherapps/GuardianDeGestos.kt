@@ -71,6 +71,37 @@ class GuardianDeGestos @Inject constructor(
         Settings.Global.getInt(contexto.contentResolver, AJUSTE_MIUI_GESTOS, 0) == 1
     }.getOrDefault(false)
 
+    /** true si la barra de navegacion esta oculta (el modo de gestos de MIUI esta encendido). */
+    fun barraOculta(): Boolean = gestosActivos()
+
+    /**
+     * Oculta o muestra la barra de navegacion del sistema.
+     *
+     * Ocultarla recupera el espacio que ocupan los botones. En MIUI esto enciende su modo de
+     * gestos de pantalla completa, que con un launcher externo NO funciona; el telefono queda
+     * navegable unicamente si hay otra fuente de gestos.
+     *
+     * Por eso quien llama a esto TIENE que verificar antes que el servicio de gestos propios
+     * este activo, y volver a mostrarla si deja de estarlo. Sin ese cuidado, esto es la funcion
+     * que dejo al usuario encerrado dentro de una app.
+     */
+    fun ocultarBarra(ocultar: Boolean): Boolean {
+        if (!tienePermiso()) return false
+
+        return runCatching {
+            Settings.Global.putInt(
+                contexto.contentResolver,
+                AJUSTE_MIUI_GESTOS,
+                if (ocultar) 1 else 0,
+            )
+            Log.i(TAG, "Barra de navegacion ${if (ocultar) "oculta" else "visible"}")
+            true
+        }.getOrElse {
+            Log.w(TAG, "No se pudo cambiar la barra de navegacion", it)
+            false
+        }
+    }
+
     /**
      * Devuelve el telefono a botones.
      *
