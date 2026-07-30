@@ -261,6 +261,30 @@ fun PantallaAjustes(
                     onClick = { contexto.startActivity(viewModel.intentGestosPropios()) },
                 )
             }
+            // Inicio automatico: sin el, MIUI apaga el servicio en cada reinicio y el usuario
+            // enciende el telefono sin gestos. Se ofrece junto a los gestos, no escondido en
+            // ayuda, porque es un paso necesario y no un dato curioso.
+            if (estado.gestosPropiosActivos && estado.tieneInicioAutomatico) {
+                item {
+                    FilaAccion(
+                        titulo = "Permitir el inicio automatico",
+                        detalle = "Necesario para que los gestos sigan activos despues de " +
+                            "reiniciar. Sin esto, el sistema apaga el servicio al encender.",
+                        onClick = {
+                            viewModel.intentInicioAutomatico()?.let(contexto::startActivity)
+                        },
+                    )
+                }
+                item {
+                    FilaAccion(
+                        titulo = "Quitar la restriccion de bateria",
+                        detalle = "En la ficha de la app, elija Sin restricciones para que el " +
+                            "sistema no cierre el servicio en segundo plano.",
+                        onClick = { contexto.startActivity(viewModel.intentDetallesDeLaApp()) },
+                    )
+                }
+            }
+
             // Ocultar la barra solo se ofrece cuando ya hay gestos propios que la reemplacen.
             // Ofrecerlo antes seria ofrecer quedarse sin ninguna forma de navegar.
             if (estado.gestosPropiosActivos && estado.puedeOcultarBarra) {

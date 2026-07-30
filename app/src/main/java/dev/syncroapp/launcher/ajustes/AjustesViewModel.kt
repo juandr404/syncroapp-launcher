@@ -37,6 +37,8 @@ data class EstadoAjustes(
     val gestosPropiosActivos: Boolean = false,
     /** true si la barra de navegacion del sistema esta oculta. */
     val barraOculta: Boolean = false,
+    /** true si este equipo tiene pantalla de inicio automatico (MIUI y capas similares). */
+    val tieneInicioAutomatico: Boolean = false,
     /** Sin el permiso de adb no se puede ocultar la barra desde la app. */
     val puedeOcultarBarra: Boolean = false,
 )
@@ -61,6 +63,7 @@ class AjustesViewModel @Inject constructor(
             estadoGestos = guardianDeGestos.estado(),
             gestosPropiosActivos = gestosPropios.estaActivo(),
             barraOculta = guardianDeGestos.barraOculta(),
+            tieneInicioAutomatico = gestosPropios.intentInicioAutomatico() != null,
             puedeOcultarBarra = guardianDeGestos.tienePermiso(),
         )
     }.stateIn(
@@ -99,6 +102,11 @@ class AjustesViewModel @Inject constructor(
 
     /** Lleva a la pantalla del sistema donde se activa el servicio de gestos propios. */
     fun intentGestosPropios(): Intent = gestosPropios.intentAjustesAccesibilidad()
+
+    /** Pantalla de inicio automatico del fabricante; null si este equipo no la tiene. */
+    fun intentInicioAutomatico(): Intent? = gestosPropios.intentInicioAutomatico()
+
+    fun intentDetallesDeLaApp(): Intent = gestosPropios.intentDetallesDeLaApp()
 
     /**
      * Oculta o muestra la barra de navegacion.

@@ -3,6 +3,8 @@ package dev.syncroapp.launcher.gestos
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -43,4 +45,38 @@ class GestorGestosPropios @Inject constructor(
     /** Abre los ajustes de accesibilidad del sistema para que el usuario lo active o desactive. */
     fun intentAjustesAccesibilidad(): Intent =
         Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+    /**
+     * Pantalla de inicio automatico de MIUI, si este equipo la tiene.
+     *
+     * Sin ese permiso, Xiaomi apaga el servicio de accesibilidad en cada reinicio: el usuario
+     * enciende el telefono y se encuentra sin gestos, con los botones de vuelta. Verificado en
+     * un Redmi Note 10 Pro, y es la causa numero uno de que los gestos "dejen de funcionar solos".
+     *
+     * Devuelve null en equipos que no son Xiaomi o si la actividad no existe en esta version.
+     */
+    fun intentInicioAutomatico(): Intent? {
+        val intent = Intent().setClassName(PAQUETE_SEGURIDAD_MIUI, ACTIVIDAD_INICIO_AUTOMATICO)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        // Se comprueba que exista antes de ofrecerla: un boton que lleva a una pantalla que no
+        // abre es peor que no tener el boton.
+        val existe = contexto.packageManager
+            .queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            .isNotEmpty()
+
+        return intent.takeIf { existe }
+    }
+
+    /** Ficha de la app en los ajustes del sistema, donde vive la restriccion de bateria. */
+    fun intentDetallesDeLaApp(): Intent = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.fromParts("package", contexto.packageName, null),
+    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+    private companion object {
+        const val PAQUETE_SEGURIDAD_MIUI = "com.miui.securitycenter"
+        const val ACTIVIDAD_INICIO_AUTOMATICO =
+            "com.miui.permcenter.autostart.AutoStartManagementActivity"
+    }
 }
