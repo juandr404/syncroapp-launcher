@@ -21,7 +21,16 @@ plugins {
  */
 val propiedadesFirma = Properties().apply {
     val archivo = rootProject.file("keystore.properties")
-    if (archivo.exists()) archivo.inputStream().use(::load)
+    if (archivo.exists()) {
+        // Se quita el BOM antes de interpretar el archivo.
+        //
+        // Un editor de Windows (o `Set-Content -Encoding utf8` de PowerShell 5.1) escribe tres
+        // bytes invisibles al principio, y entonces la primera clave se llama "﻿storeFile"
+        // en vez de "storeFile". El resultado es un APK sin firmar sin ningun mensaje de error:
+        // el fallo mas caro de diagnosticar que puede tener este archivo.
+        val texto = archivo.readText(Charsets.UTF_8).removePrefix("﻿")
+        load(texto.reader())
+    }
 }
 
 fun datoDeFirma(clave: String, variableEntorno: String): String? =

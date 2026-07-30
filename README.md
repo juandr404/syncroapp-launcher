@@ -174,11 +174,34 @@ keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 4096 -validity
 Para compilar firmado en local, cree `keystore.properties` en la raiz (ya esta en `.gitignore`):
 
 ```properties
-storeFile=release.jks
+storeFile=C:/Users/usuario/release.jks
 storePassword=...
 keyAlias=syncroapp
 keyPassword=...
 ```
+
+> **Cuidado con el BOM si lo crea desde PowerShell.** `Set-Content -Encoding utf8` en
+> PowerShell 5.1 escribe tres bytes invisibles al principio del archivo, y entonces la primera
+> clave pasa a llamarse `﻿storeFile` en vez de `storeFile`. El sintoma es un APK **sin firmar
+> y sin ningun mensaje de error**. La compilacion ya quita el BOM por si acaso, pero para
+> escribirlo limpio de entrada:
+>
+> ```powershell
+> [System.IO.File]::WriteAllLines("keystore.properties", @(
+>   "storeFile=C:/Users/usuario/release.jks",
+>   "storePassword=...",
+>   "keyAlias=syncroapp",
+>   "keyPassword=..."
+> ))
+> ```
+
+Para comprobar que el APK quedo firmado de verdad, y con que certificado:
+
+```bash
+apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+```
+
+Un detalle util: si el archivo se llama `app-release-unsigned.apk`, la firma no se aplico.
 
 Para que el flujo de trabajo de release firme y publique solo, agregue estos secretos al
 repositorio en GitHub:
