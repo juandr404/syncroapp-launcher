@@ -8,6 +8,10 @@ tiene forma tecnica de contarselo a nadie.
 
 ![Pantalla de inicio](docs/capturas/inicio.png)
 
+**Atajos:** [Instalar](#instalacion) · [Compilarlo usted mismo](#compilar) ·
+[Los gestos en Xiaomi](#los-gestos-de-navegacion-en-xiaomi) ·
+[Registro de cambios](CHANGELOG.md)
+
 ---
 
 ## Estado
@@ -114,6 +118,40 @@ aparece, porque ahi los gestos nativos funcionan y son mejores.
 
 ## Compilar
 
+### Si nunca ha compilado una app de Android
+
+No hace falta saber programar. Son cuatro pasos y toma unos 20 minutos, casi todos de descarga.
+
+**1. Instale Android Studio.** Descarguelo de
+[developer.android.com/studio](https://developer.android.com/studio) e instalelo con las
+opciones por defecto. Trae dentro las dos cosas que hacen falta: el SDK de Android y un JDK.
+No hay que instalarlos aparte.
+
+**2. Abra el proyecto.** En la pantalla de bienvenida elija **Clone Repository**, pegue esta
+direccion y acepte:
+
+```
+https://github.com/juandr404/syncroapp-launcher.git
+```
+
+Si prefiere hacerlo desde una terminal, `git clone` de esa misma direccion y luego
+**File → Open** sobre la carpeta.
+
+**3. Espere la primera sincronizacion.** Android Studio descarga las dependencias solo. La barra
+de abajo dira algo como *"Gradle sync in progress"*; puede tardar varios minutos la primera vez.
+Si aparece un aviso ofreciendo instalar algo que falta (una version del SDK, por ejemplo),
+acepte.
+
+**4. Compile e instale.** Conecte el telefono por USB con la
+[depuracion USB activada](https://developer.android.com/studio/debug/dev-options) y presione el
+boton **Run** (el triangulo verde). Android Studio compila, instala y abre la app.
+
+Para dejarlo como su pantalla de inicio, abra la app y toque **Establecer como pantalla de
+inicio**. Si quiere volver atras en cualquier momento, cualquier launcher se puede reemplazar
+desde los ajustes del sistema; no queda nada atrapado.
+
+### Si ya tiene el entorno
+
 Necesita el SDK de Android y un JDK 17 o superior (sirve el que trae Android Studio).
 
 ```bash
@@ -122,11 +160,22 @@ cd syncroapp-launcher
 ./gradlew assembleDebug
 ```
 
+En Windows use `gradlew.bat` en lugar de `./gradlew`.
+
 El APK queda en `app/build/outputs/apk/debug/`. Para instalarlo en un dispositivo conectado:
 
 ```bash
 ./gradlew installDebug
 ```
+
+### Si algo falla
+
+| Sintoma | Causa habitual |
+|---|---|
+| `SDK location not found` | Falta `local.properties`. Abrir el proyecto una vez con Android Studio lo genera. |
+| `Unsupported class file major version` o errores de JDK | Se esta usando un JDK distinto de 17. El que trae Android Studio funciona: en Windows suele estar en `C:\Program Files\Android\Android Studio\jbr`. |
+| La app compila pero no aparece en el selector de pantalla de inicio | Algunas capas de fabricante esconden ese ajuste. La app trae un boton que abre directamente los ajustes de inicio del sistema. |
+| Los gestos de navegacion dejan de funcionar al activarla | Es una restriccion del fabricante, no un fallo de la app. Vea [la seccion de Xiaomi](#los-gestos-de-navegacion-en-xiaomi). |
 
 Pruebas unitarias:
 
