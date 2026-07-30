@@ -185,10 +185,22 @@ repositorio en GitHub:
 
 | Secreto | Contenido |
 |---|---|
-| `SIGNING_STORE_BASE64` | El archivo `.jks` en base64: `base64 -w0 release.jks` |
+| `SIGNING_STORE_BASE64` | El archivo `.jks` codificado en base64 (ver abajo) |
 | `SIGNING_STORE_PASSWORD` | Contraseña del almacen |
 | `SIGNING_KEY_ALIAS` | `syncroapp` |
 | `SIGNING_KEY_PASSWORD` | Contraseña de la clave |
+
+El almacen viaja en base64 porque los secretos de GitHub solo admiten texto. En Linux o macOS:
+
+```bash
+base64 -w0 release.jks
+```
+
+En Windows con PowerShell, que no trae el comando `base64`:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("release.jks")) | Set-Clipboard
+```
 
 Con eso, publicar una version es etiquetar y empujar:
 
