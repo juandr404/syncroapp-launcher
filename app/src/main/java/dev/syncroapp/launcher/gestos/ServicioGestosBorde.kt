@@ -50,16 +50,25 @@ class ServicioGestosBorde : AccessibilityService() {
         val inferior = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
 
         // Bordes izquierdo y derecho: deslizar hacia el centro = atras.
-        agregarTira(lateralIzquierdo, ANCHO_LATERAL_PX, ALTO_LATERAL_PX) { dx, dy ->
-            if (dx > UMBRAL_PX && abs(dx) > abs(dy)) Accion.ATRAS else null
+        agregarTira(lateralIzquierdo, ANCHO_LATERAL_PX, ALTO_LATERAL_PX) { g ->
+            if (g.dx > UMBRAL_PX && abs(g.dx) > abs(g.dy)) Accion.ATRAS else null
         }
-        agregarTira(lateralDerecho, ANCHO_LATERAL_PX, ALTO_LATERAL_PX) { dx, dy ->
-            if (dx < -UMBRAL_PX && abs(dx) > abs(dy)) Accion.ATRAS else null
+        agregarTira(lateralDerecho, ANCHO_LATERAL_PX, ALTO_LATERAL_PX) { g ->
+            if (g.dx < -UMBRAL_PX && abs(g.dx) > abs(g.dy)) Accion.ATRAS else null
         }
 
-        // Borde inferior: deslizar hacia arriba = aplicaciones recientes.
-        agregarTira(inferior, ANCHO_INFERIOR_PX, ALTO_INFERIOR_PX) { dx, dy ->
-            if (dy < -UMBRAL_PX && abs(dy) > abs(dx)) Accion.RECIENTES else null
+        // Borde inferior: deslizar hacia arriba.
+        //
+        // Rapido va al inicio; sostenido muestra las apps abiertas, igual que en Android puro.
+        // El discriminador es el tiempo que el dedo sigue abajo DESPUES de pasar el umbral: un
+        // toque suelto lo cruza y suelta en unas decenas de milisegundos, mientras que sostener
+        // (o arrastrar despacio a proposito) pasa de un cuarto de segundo.
+        agregarTira(inferior, ANCHO_INFERIOR_PX, ALTO_INFERIOR_PX) { g ->
+            when {
+                g.dy >= -UMBRAL_PX || abs(g.dy) <= abs(g.dx) -> null
+                g.msDesdeElUmbral >= MS_SOSTENER -> Accion.RECIENTES
+                else -> Accion.INICIO
+            }
         }
 
         Log.i(TAG, "Servicio de gestos conectado con ${tiras.size} tiras de borde")
@@ -68,14 +77,13 @@ class ServicioGestosBorde : AccessibilityService() {
     /**
      * Agrega una tira invisible al borde indicado.
      *
-     * [decidir] recibe el desplazamiento total del dedo (en pixeles, negativo hacia arriba o
-     * hacia la izquierda) y devuelve la accion a ejecutar, o null si el gesto no califica.
+     * [decidir] recibe el gesto completo y devuelve la accion a ejecutar, o null si no califica.
      */
     private fun agregarTira(
         gravedad: Int,
         ancho: Int,
         alto: Int,
-        decidir: (dx: Float, dy: Float) -> Accion?,
+        decidir: (Gesto) -> Accion?,
     ) {
         val parametros = WindowManager.LayoutParams(
             ancho,
@@ -90,6 +98,8 @@ class ServicioGestosBorde : AccessibilityService() {
 
         var inicioX = 0f
         var inicioY = 0f
+        // 0 = el gesto todavia no ha pasado el umbral en esta caricia.
+        var msDelUmbral = 0L
 
         val tira = View(this).apply {
             setOnTouchListener { vista, evento ->
@@ -97,11 +107,35 @@ class ServicioGestosBorde : AccessibilityService() {
                     MotionEvent.ACTION_DOWN -> {
                         inicioX = evento.rawX
                         inicioY = evento.rawY
+                        msDelUmbral = 0L
+                        true
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        // Se anota el instante EXACTO en que el dedo cruzo el umbral, una sola
+                        // vez por caricia. Medir desde ahi y no desde el inicio evita que un
+                        // arranque titubeante cuente como haber sostenido el gesto.
+                        val recorrido = maxOf(
+                            abs(evento.rawX - inicioX),
+                            abs(evento.rawY - inicioY),
+                        )
+                        if (msDelUmbral == 0L && recorrido > UMBRAL_PX) {
+                            msDelUmbral = evento.eventTime
+                        }
                         true
                     }
 
                     MotionEvent.ACTION_UP -> {
-                        val accion = decidir(evento.rawX - inicioX, evento.rawY - inicioY)
+                        val gesto = Gesto(
+                            dx = evento.rawX - inicioX,
+                            dy = evento.rawY - inicioY,
+                            msDesdeElUmbral = if (msDelUmbral == 0L) {
+                                0L
+                            } else {
+                                evento.eventTime - msDelUmbral
+                            },
+                        )
+                        val accion = decidir(gesto)
                         if (accion != null) {
                             // Vibracion corta: sin ella el usuario no sabe si el gesto entro.
                             // performHapticFeedback no necesita el permiso VIBRATE.
@@ -124,6 +158,7 @@ class ServicioGestosBorde : AccessibilityService() {
     private fun ejecutar(accion: Accion) {
         val global = when (accion) {
             Accion.ATRAS -> GLOBAL_ACTION_BACK
+            Accion.INICIO -> GLOBAL_ACTION_HOME
             Accion.RECIENTES -> GLOBAL_ACTION_RECENTS
         }
         val exito = performGlobalAction(global)
@@ -142,7 +177,16 @@ class ServicioGestosBorde : AccessibilityService() {
 
     override fun onInterrupt() = Unit
 
-    private enum class Accion { ATRAS, RECIENTES }
+    /**
+     * Un gesto terminado.
+     *
+     * @param dx desplazamiento horizontal total, negativo hacia la izquierda.
+     * @param dy desplazamiento vertical total, negativo hacia arriba.
+     * @param msDesdeElUmbral milisegundos que el dedo siguio apoyado despues de pasar el umbral.
+     */
+    private data class Gesto(val dx: Float, val dy: Float, val msDesdeElUmbral: Long)
+
+    private enum class Accion { ATRAS, INICIO, RECIENTES }
 
     private companion object {
         const val TAG = "GestosBorde"
@@ -154,5 +198,8 @@ class ServicioGestosBorde : AccessibilityService() {
         const val ANCHO_INFERIOR_PX = 700
         const val ALTO_INFERIOR_PX = 55
         const val UMBRAL_PX = 110 // ~40 dp: menos que esto es un toque, no un deslizamiento
+
+        /** Sostener el dedo mas de un cuarto de segundo pasa de "ir al inicio" a "ver apps". */
+        const val MS_SOSTENER = 250L
     }
 }
