@@ -1,5 +1,7 @@
 package dev.syncroapp.launcher.cajon
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,13 +29,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,6 +61,7 @@ import dev.syncroapp.launcher.core.ui.tema.dimensionesDe
  * La busqueda es el flujo central: escribir dos letras y presionar Enter debe abrir la app.
  * Por eso el teclado se abre solo y el campo no tiene caja, solo una linea base.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PantallaCajon(
     onCerrar: () -> Unit,
@@ -83,18 +93,21 @@ fun PantallaCajon(
         }
     }
 
+    val cerrarCajon = {
+        viewModel.limpiarBusqueda()
+        onCerrar()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .imePadding(),
+            .imePadding()
+            .nestedScroll(recordarCierrePorArrastre(alCerrar = cerrarCajon)),
     ) {
         EncabezadoPantalla(
             titulo = "Aplicaciones",
-            onVolver = {
-                viewModel.limpiarBusqueda()
-                onCerrar()
-            },
+            onVolver = cerrarCajon,
             modifier = Modifier.padding(top = Espacio.s),
         )
 
@@ -122,30 +135,37 @@ fun PantallaCajon(
             )
         }
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(
-                items = estado.resultados,
-                key = { it.claveEstable },
-            ) { app ->
-                FilaApp(
-                    etiqueta = app.etiqueta,
-                    alineacion = estado.ajustes.alineacion,
-                    dimensiones = dimensiones,
-                    esPerfilTrabajo = app.esPerfilTrabajo,
-                    esFavorito = app.claveEstable in estado.clavesFavoritas,
-                    icono = rememberIconoApp(
-                        app = app,
-                        estilo = estado.ajustes.estiloIconos,
-                        tamano = dimensiones.tamanoIcono,
-                        cargador = viewModel.cargadorIconos,
-                    ),
-                    onClick = {
-                        viewModel.abrirApp(app)
-                        viewModel.limpiarBusqueda()
-                        onCerrar()
-                    },
-                    onLongClick = { appDelMenu = app },
-                )
+        // Sin el efecto de estiramiento del borde.
+        //
+        // No es una decision estetica: ese efecto CONSUME el arrastre que la lista ya no puede
+        // usar, y por eso el sobrante nunca llegaba al detector de cierre. Quitarlo hace que el
+        // gesto de bajar para cerrar funcione, y de paso encaja con el sistema de diseno, que
+        // descarta los rebotes elasticos.
+        CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(
+                    items = estado.resultados,
+                    key = { it.claveEstable },
+                ) { app ->
+                    FilaApp(
+                        etiqueta = app.etiqueta,
+                        alineacion = estado.ajustes.alineacion,
+                        dimensiones = dimensiones,
+                        esPerfilTrabajo = app.esPerfilTrabajo,
+                        esFavorito = app.claveEstable in estado.clavesFavoritas,
+                        icono = rememberIconoApp(
+                            app = app,
+                            estilo = estado.ajustes.estiloIconos,
+                            tamano = dimensiones.tamanoIcono,
+                            cargador = viewModel.cargadorIconos,
+                        ),
+                        onClick = {
+                            viewModel.abrirApp(app)
+                            cerrarCajon()
+                        },
+                        onLongClick = { appDelMenu = app },
+                    )
+                }
             }
         }
     }
@@ -166,6 +186,58 @@ fun PantallaCajon(
         )
     }
 }
+
+/**
+ * Cierra el cajon al arrastrar hacia abajo, como inverso del gesto que lo abre.
+ *
+ * Se implementa con nested scroll y no con un detector de arrastre propio por una razon
+ * concreta: `onPostScroll` solo recibe el desplazamiento que la lista NO consumio. Con la lista
+ * a media altura, el arrastre hacia abajo se lo lleva la lista para subir, y aqui no llega
+ * nada; el cierre solo se dispara cuando la lista ya esta arriba y sobra movimiento. Ese
+ * "primero subo, luego cierro" es lo que hace que el gesto no se sienta torpe.
+ */
+@Composable
+private fun recordarCierrePorArrastre(alCerrar: () -> Unit): NestedScrollConnection {
+    val umbral = with(LocalDensity.current) { UMBRAL_CIERRE.toPx() }
+
+    return remember(alCerrar, umbral) {
+        object : NestedScrollConnection {
+            /** Suma del arrastre hacia abajo sobrante desde que empezo el gesto. */
+            private var acumulado = 0f
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                when {
+                    available.y > 0f -> acumulado += available.y
+                    // Cualquier movimiento hacia arriba cancela: el usuario cambio de idea.
+                    available.y < 0f -> acumulado = 0f
+                }
+                return Offset.Zero
+            }
+
+            /**
+             * El cierre se dispara aqui, al terminar el gesto, y no en pleno arrastre.
+             *
+             * Cerrando a media caricia el resto del arrastre caia sobre la pantalla de inicio,
+             * que interpreta el deslizar hacia abajo como "abrir notificaciones": un solo gesto
+             * terminaba cerrando el cajon Y bajando el panel del sistema. Esperar a que el dedo
+             * se levante lo evita, y de paso deja cambiar de idea a mitad del gesto.
+             */
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                val cerrar = acumulado >= umbral
+                acumulado = 0f
+                if (cerrar) alCerrar()
+                return Velocity.Zero
+            }
+        }
+    }
+}
+
+/** ~56 dp de arrastre sobrante. Menos que esto se dispararia con un rebote de la lista. */
+private val UMBRAL_CIERRE = 56.dp
 
 /**
  * Campo de busqueda sin caja: solo el texto, el cursor y una linea base de 1 dp.
