@@ -296,7 +296,7 @@ fun PantallaAjustes(
         item {
             FilaAccion(
                 titulo = "SyncroApp Launcher",
-                detalle = "Version 0.1.0 - software libre, sin rastreadores, sin acceso a internet",
+                detalle = "Version 0.2.0 - software libre, sin rastreadores, sin acceso a internet",
                 onClick = { },
             )
         }

@@ -41,6 +41,19 @@ class ServicioGestosBorde : AccessibilityService() {
     private lateinit var ventanas: WindowManager
     private val tiras = mutableListOf<View>()
 
+    /** Recorrido minimo del dedo, en pixeles de este dispositivo. */
+    private var umbralPx = 0f
+
+    /**
+     * Medidas en pixeles de ESTE dispositivo, calculadas a partir de dp.
+     *
+     * WindowManager.LayoutParams solo entiende pixeles, pero fijar pixeles a mano ata las tiras
+     * a una densidad concreta: 55 px son 20 dp en un telefono de 440 dpi y solo 12 dp en uno de
+     * 560, donde la zona quedaria demasiado estrecha para acertarle. Se convierte desde dp para
+     * que el area sensible mida lo mismo al dedo en cualquier pantalla.
+     */
+    private fun Int.aPx(): Int = (this * resources.displayMetrics.density).toInt()
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         ventanas = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -49,12 +62,21 @@ class ServicioGestosBorde : AccessibilityService() {
         val lateralDerecho = Gravity.END or Gravity.CENTER_VERTICAL
         val inferior = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
 
+        val anchoLateral = ANCHO_LATERAL_DP.aPx()
+        val anchoInferior = ANCHO_INFERIOR_DP.aPx()
+        val altoInferior = ALTO_INFERIOR_DP.aPx()
+        umbralPx = UMBRAL_DP.aPx().toFloat()
+
+        // La franja lateral se define como fraccion de la pantalla y no en dp: en un telefono
+        // corto un valor fijo taparia las esquinas, y ahi viven los gestos del sistema.
+        val altoLateral = (resources.displayMetrics.heightPixels * FRACCION_ALTO_LATERAL).toInt()
+
         // Bordes izquierdo y derecho: deslizar hacia el centro = atras.
-        agregarTira(lateralIzquierdo, ANCHO_LATERAL_PX, ALTO_LATERAL_PX) { g ->
-            if (g.dx > UMBRAL_PX && abs(g.dx) > abs(g.dy)) Accion.ATRAS else null
+        agregarTira(lateralIzquierdo, anchoLateral, altoLateral) { g ->
+            if (g.dx > umbralPx && abs(g.dx) > abs(g.dy)) Accion.ATRAS else null
         }
-        agregarTira(lateralDerecho, ANCHO_LATERAL_PX, ALTO_LATERAL_PX) { g ->
-            if (g.dx < -UMBRAL_PX && abs(g.dx) > abs(g.dy)) Accion.ATRAS else null
+        agregarTira(lateralDerecho, anchoLateral, altoLateral) { g ->
+            if (g.dx < -umbralPx && abs(g.dx) > abs(g.dy)) Accion.ATRAS else null
         }
 
         // Borde inferior: deslizar hacia arriba.
@@ -63,9 +85,9 @@ class ServicioGestosBorde : AccessibilityService() {
         // El discriminador es el tiempo que el dedo sigue abajo DESPUES de pasar el umbral: un
         // toque suelto lo cruza y suelta en unas decenas de milisegundos, mientras que sostener
         // (o arrastrar despacio a proposito) pasa de un cuarto de segundo.
-        agregarTira(inferior, ANCHO_INFERIOR_PX, ALTO_INFERIOR_PX) { g ->
+        agregarTira(inferior, anchoInferior, altoInferior) { g ->
             when {
-                g.dy >= -UMBRAL_PX || abs(g.dy) <= abs(g.dx) -> null
+                g.dy >= -umbralPx || abs(g.dy) <= abs(g.dx) -> null
                 g.msDesdeElUmbral >= MS_SOSTENER -> Accion.RECIENTES
                 else -> Accion.INICIO
             }
@@ -119,7 +141,7 @@ class ServicioGestosBorde : AccessibilityService() {
                             abs(evento.rawX - inicioX),
                             abs(evento.rawY - inicioY),
                         )
-                        if (msDelUmbral == 0L && recorrido > UMBRAL_PX) {
+                        if (msDelUmbral == 0L && recorrido > umbralPx) {
                             msDelUmbral = evento.eventTime
                         }
                         true
@@ -191,13 +213,17 @@ class ServicioGestosBorde : AccessibilityService() {
     private companion object {
         const val TAG = "GestosBorde"
 
-        // En pixeles crudos porque una LayoutParams de WindowManager no entiende dp.
-        // A 440 dpi del Redmi, 1 dp = 2.75 px.
-        const val ANCHO_LATERAL_PX = 55 // ~20 dp de ancho de zona sensible
-        const val ALTO_LATERAL_PX = 1100 // franja central: deja libres las esquinas
-        const val ANCHO_INFERIOR_PX = 700
-        const val ALTO_INFERIOR_PX = 55
-        const val UMBRAL_PX = 110 // ~40 dp: menos que esto es un toque, no un deslizamiento
+        /** Ancho de la zona sensible de los bordes laterales. */
+        const val ANCHO_LATERAL_DP = 20
+
+        /** La franja lateral cubre la mitad central de la altura, dejando libres las esquinas. */
+        const val FRACCION_ALTO_LATERAL = 0.5f
+
+        const val ANCHO_INFERIOR_DP = 240
+        const val ALTO_INFERIOR_DP = 20
+
+        /** Recorrido minimo: menos que esto es un toque, no un deslizamiento. */
+        const val UMBRAL_DP = 40
 
         /** Sostener el dedo mas de un cuarto de segundo pasa de "ir al inicio" a "ver apps". */
         const val MS_SOSTENER = 250L

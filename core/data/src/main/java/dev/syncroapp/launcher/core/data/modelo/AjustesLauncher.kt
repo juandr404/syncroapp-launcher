@@ -113,11 +113,6 @@ data class AjustesLauncher(
     val appsOcultas: Set<String> = emptySet(),
 
     // --- Busqueda ---
-    /**
-     * Reponer los gestos de navegacion cuando MIUI los apaga (solo equipos Xiaomi).
-     * Requiere conceder WRITE_SECURE_SETTINGS por adb una vez; ver GuardianDeGestos.
-     */
-    val protegerGestos: Boolean = false,
     val tecladoAutomatico: Boolean = true,
     /** Abrir la app automaticamente cuando la busqueda deja un unico resultado. */
     val abrirUnicoResultado: Boolean = false,

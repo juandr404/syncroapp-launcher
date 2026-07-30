@@ -12,7 +12,7 @@ import java.io.OutputStream
  * Serializador de [AjustesLauncher] para DataStore.
  *
  * Se usa JSON en vez de Protobuf porque da el mismo esquema tipado y los mismos defaults
- * en un solo lugar, sin agregar el paso de codegen de protoc al build (ver ADR-007).
+ * en un solo lugar, sin agregar el paso de codegen de protoc al build (ver ADR-005).
  *
  * - ignoreUnknownKeys: un archivo escrito por una version futura no rompe una version vieja.
  * - encodeDefaults: el archivo siempre queda completo y legible a ojo para depurar.

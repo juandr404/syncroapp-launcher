@@ -28,7 +28,7 @@ import javax.inject.Singleton
 /**
  * Implementacion real de [FuenteApps] sobre LauncherApps.
  *
- * Se usa LauncherApps y no PackageManager por tres razones (ver ADR-006):
+ * Se usa LauncherApps y no PackageManager por tres razones (ver ADR-004):
  *  1. Es la unica API que ve las apps del perfil de trabajo con su UserHandle correcto.
  *  2. Los launchers (intent-filter HOME) quedan exentos del filtrado de visibilidad de
  *     paquetes de Android 11+, asi que no hace falta pedir QUERY_ALL_PACKAGES.

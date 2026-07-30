@@ -12,7 +12,7 @@ tiene forma tecnica de contarselo a nadie.
 
 ## Estado
 
-**v0.1.0 — funcional y en uso diario, todavia temprano.** Es un proyecto personal publicado como
+**v0.2.0 — funcional y en uso diario, todavia temprano.** Es un proyecto personal publicado como
 software libre. No esta en Google Play y no hay planes de publicarlo alli: se instala desde el
 APK de las releases o compilandolo usted mismo.
 
@@ -38,13 +38,23 @@ APK de las releases o compilandolo usted mismo.
 - Accesibilidad: descripciones para TalkBack, areas tactiles de 48 dp minimo, todo el texto en
   `sp` para respetar el escalado del sistema.
 
+- **Gestos de navegacion propios** para los equipos donde el sistema los desactiva, y opcion de
+  ocultar la barra de navegacion (ver mas abajo).
+- **Dock inferior** de hasta cinco accesos rapidos en circulos de contorno.
+- Cerrar el cajon arrastrando hacia abajo; si la lista esta a media altura, primero la sube.
+
 ### Lo que falta
 
-- Fuentes empaquetadas y selector de tipografia (hoy usa la del sistema).
+- Selector de tipografia (hoy usa Poppins, empaquetada en la app).
 - Conjunto propio de iconos de linea para las aplicaciones mas comunes.
 - Bienestar digital: pausa consciente antes de abrir apps marcadas como distractoras.
 - Bloqueo de apps con biometria, respaldo y restauracion de la configuracion.
-- Gestos configurables (hoy son fijos).
+- Gestos del launcher configurables (hoy son fijos) y sensibilidad ajustable de los de borde.
+- Que los gestos propios se apaguen solos en Android puro, donde los nativos son mejores.
+- Pruebas de los ViewModels, de la envoltura de `LauncherApps` y del servicio de gestos: hoy la
+  cobertura esta concentrada en `:core:data` y no cubre el codigo de mas riesgo.
+
+El detalle de cada version esta en el [registro de cambios](CHANGELOG.md).
 
 ## Instalacion
 
@@ -56,27 +66,45 @@ como pantalla de inicio**.
 
 ## Los gestos de navegacion en Xiaomi
 
-MIUI y HyperOS **desactivan los gestos de pantalla completa** cuando el launcher predeterminado no
-es el suyo, y dejan el telefono en botones. No es un fallo de esta app: le ocurre a todos los
-launchers externos. Y no lo hacen una sola vez: se verifico en un Redmi Note 10 Pro que MIUI
-revierte el ajuste repetidamente, incluso despues de reactivarlo a mano por adb.
+MIUI y HyperOS **desactivan los gestos de pantalla completa** cuando el launcher predeterminado
+no es el suyo, y dejan el telefono en botones. Xiaomi lo dice sin rodeos en su propia pantalla
+de ajustes: *"No se pueden usar gestos de pantalla completa con lanzadores de terceros."*
 
-Esta app puede reponerlos sola cada vez que vuelve al inicio, pero para escribir un ajuste del
-sistema necesita `WRITE_SECURE_SETTINGS`, un permiso que solo se concede por adb: no existe forma
-de pedirlo con un dialogo, y ese requisito es justamente lo que lo hace seguro.
+La causa esta documentada en [ADR-007](docs/adr/ADR-007-gestos-propios.md): en esos equipos el
+unico proveedor del servicio del sistema que implementa atras, inicio y recientes es el launcher
+de Xiaomi. Con otro launcher predeterminado nadie atiende esos gestos, y MIUI no pone un
+reemplazo. **Ninguna app puede arreglar eso**, y forzar el ajuste solo esconde los botones sin
+devolver la navegacion, dejando el telefono sin forma de salir de una aplicacion.
 
-1. Active **Depuracion USB (ajustes de seguridad)** en Opciones de desarrollador.
-2. Con el telefono conectado, ejecute una sola vez:
+### Gestos propios
+
+La solucion es no depender de los del sistema. Actívelos en
+**Ajustes → Navegacion del sistema → Activar gestos propios**, que lleva a la pantalla de
+accesibilidad de Android.
+
+| Gesto | Accion |
+|---|---|
+| Deslizar desde el borde izquierdo o derecho | Atras |
+| Deslizar rapido desde el borde inferior | Ir al inicio |
+| Deslizar desde el borde inferior y sostener | Aplicaciones abiertas |
+
+El servicio **no lee el contenido de la pantalla** (`canRetrieveWindowContent="false"`): solo
+dibuja tres zonas invisibles en los bordes y ejecuta esas tres acciones.
+
+### Recuperar el espacio de la barra
+
+Con los gestos propios activos aparece **Ajustes → Navegacion del sistema → Ocultar la barra de
+navegacion**. Requiere conceder una vez, por adb, un permiso que no se puede pedir desde un
+dialogo:
 
 ```bash
 adb shell pm grant dev.syncroapp.launcher android.permission.WRITE_SECURE_SETTINGS
 ```
 
-3. En la app, active **Ajustes → Gestos del sistema → Mantener los gestos activos**.
-
-Para revocarlo, el mismo comando con `revoke` en lugar de `grant`. Sin conceder el permiso la app
-funciona igual: la opcion queda desactivada y Ajustes muestra el comando con un boton para
-copiarlo. En equipos que no son Xiaomi la seccion no aparece.
+La opcion tiene tres candados para no dejarlo sin navegacion: solo aparece si los gestos propios
+estan activos, se niega a ocultar la barra si no lo estan, y **si el servicio deja de estar
+activo, la barra vuelve sola** al entrar al launcher. En equipos que no son Xiaomi la seccion no
+aparece, porque ahi los gestos nativos funcionan y son mejores.
 
 ## Compilar
 
