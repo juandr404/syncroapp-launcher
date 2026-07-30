@@ -1,0 +1,77 @@
+name: Release
+
+# Se dispara al publicar un tag de version. El tag es la fuente de verdad de que se publica:
+# no hay forma de sacar una release sin que quede el punto exacto del historial que la produjo.
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publicar:
+    name: Compilar, firmar y publicar
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # necesario para crear la release y subirle el APK
+
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Las mismas puertas que en CI: una release no se salta el control de calidad.
+      - name: Analisis estatico y pruebas
+        run: ./gradlew detekt test lintRelease --stacktrace
+
+      - name: Reconstruir el almacen de claves
+        # El almacen viaja como texto en base64 porque los secretos de GitHub no admiten
+        # binarios. Se escribe fuera del arbol de trabajo para que no pueda colarse en un commit.
+        env:
+          ALMACEN_BASE64: ${{ secrets.SIGNING_STORE_BASE64 }}
+        run: |
+          if [ -z "$ALMACEN_BASE64" ]; then
+            echo "::error::Falta el secreto SIGNING_STORE_BASE64. Ver README, seccion Publicar una version."
+            exit 1
+          fi
+          echo "$ALMACEN_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+
+      - name: Compilar el APK firmado
+        env:
+          SIGNING_STORE_FILE: ${{ runner.temp }}/release.jks
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Comprobar que quedo firmado
+        # Un APK sin firmar no se instala. Sin esta comprobacion, un secreto mal configurado
+        # publicaria un archivo inutil y el fallo solo se descubriria al intentar instalarlo.
+        run: |
+          APK=$(find app/build/outputs/apk/release -name '*.apk' ! -name '*unsigned*' | head -1)
+          if [ -z "$APK" ]; then
+            echo "::error::No se genero ningun APK firmado."
+            exit 1
+          fi
+          echo "APK=$APK" >> "$GITHUB_ENV"
+          echo "Publicando $APK"
+
+      - name: Renombrar con la version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cp "$APK" "syncroapp-launcher-$VERSION.apk"
+          echo "ARCHIVO=syncroapp-launcher-$VERSION.apk" >> "$GITHUB_ENV"
+
+      - name: Publicar la release con el APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$ARCHIVO" \
+            --title "SyncroApp Launcher $GITHUB_REF_NAME" \
+            --notes "Detalle de los cambios en [CHANGELOG.md](CHANGELOG.md)."

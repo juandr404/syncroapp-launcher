@@ -58,8 +58,14 @@ El detalle de cada version esta en el [registro de cambios](CHANGELOG.md).
 
 ## Instalacion
 
-Descargue el APK de la seccion de releases e instalelo. Despues, en la app, toque **Establecer
-como pantalla de inicio**.
+Descargue el APK de la [seccion de releases](https://github.com/juandr404/syncroapp-launcher/releases)
+e instalelo. Despues, en la app, toque **Establecer como pantalla de inicio**.
+
+Si todavia no hay ninguna release publicada, compilelo usted mismo (ver [Compilar](#compilar)).
+El APK **no** vive en el historial de git a proposito: es un derivado del codigo, y git guarda
+cada version para siempre, asi que unas cuantas entregas dejarian megabytes de historia que ya
+no se pueden podar. Los binarios se distribuyen como archivos adjuntos de las releases, que se
+guardan aparte del historial.
 
 > En MIUI, HyperOS y otras capas, el dialogo del sistema a veces no aparece. Para ese caso la app
 > ofrece siempre un segundo boton que abre directamente los ajustes de pantalla de inicio.
@@ -146,6 +152,58 @@ Antes de publicar conviene compilar la variante de release: aplica R8 y descubre
 ```bash
 ./gradlew assembleRelease
 ```
+
+## Publicar una version
+
+El APK que se distribuye tiene que ir firmado con una clave de release. Esa clave **no esta en
+el repositorio** ni puede estarlo: quien la tenga puede firmar actualizaciones que Android
+aceptara como legitimas.
+
+Tampoco se usa la clave de depuracion, que es publica y compartida por todos los proyectos de
+Android. Y una vez que un usuario instala la app, **solo se puede actualizar con la misma clave
+con que se firmo**: perderla obliga a todo el mundo a desinstalar y reinstalar. Guardela en dos
+sitios distintos.
+
+Crear la clave, una sola vez (elija usted la contraseña, que no debe quedar en ningun archivo
+versionado):
+
+```bash
+keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 4096 -validity 10000 -alias syncroapp
+```
+
+Para compilar firmado en local, cree `keystore.properties` en la raiz (ya esta en `.gitignore`):
+
+```properties
+storeFile=release.jks
+storePassword=...
+keyAlias=syncroapp
+keyPassword=...
+```
+
+Para que el flujo de trabajo de release firme y publique solo, agregue estos secretos al
+repositorio en GitHub:
+
+| Secreto | Contenido |
+|---|---|
+| `SIGNING_STORE_BASE64` | El archivo `.jks` en base64: `base64 -w0 release.jks` |
+| `SIGNING_STORE_PASSWORD` | Contraseña del almacen |
+| `SIGNING_KEY_ALIAS` | `syncroapp` |
+| `SIGNING_KEY_PASSWORD` | Contraseña de la clave |
+
+Con eso, publicar una version es etiquetar y empujar:
+
+```bash
+git tag -a v0.3.0 -m "SyncroApp Launcher v0.3.0"
+git push origin v0.3.0
+```
+
+El flujo corre detekt, las pruebas y el lint antes de compilar, verifica que el APK quedo
+firmado —un APK sin firma no se instala, y sin esa comprobacion el fallo solo se descubriria al
+intentar instalarlo— y crea la release con el archivo adjunto.
+
+Sin los secretos configurados, la compilacion de release funciona igual pero queda sin firmar.
+Es deliberado: es preferible un APK que no se instala a uno firmado con una clave de juguete que
+despues no se puede reemplazar.
 
 ## Arquitectura
 
